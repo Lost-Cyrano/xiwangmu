@@ -33,6 +33,9 @@
     .dropdown-user .info .role { font-size: 0.7rem; color: #888; }
     .dropdown-user.me { background: #fff5f5; margin: 0 -14px; padding: 6px 14px; }
 
+    .dropdown-logout { padding: 10px 14px; border-top: 1px solid #f0f0f0; cursor: pointer; font-size: 0.8rem; color: #c00; text-align: center; transition: background 0.15s; }
+    .dropdown-logout:hover { background: #fff5f5; }
+
     main { width: 100%; max-width: 100%; margin: 0 auto; padding: 12px; }
     @media (min-width: 500px) { main { padding: 16px; } }
     @media (min-width: 700px) { main { padding: 24px; } }
@@ -90,15 +93,6 @@
     .btn-save { background: #e60000; color: white; border: none; padding: 9px 14px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
     .btn-save:hover { background: #c40000; }
 
-    /* Sélecteur d'accès (fiche) */
-    .access-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-    .access-chip { display: flex; align-items: center; gap: 4px; padding: 5px 8px; border-radius: 14px; border: 1px solid #e0e0e0; background: white; font-size: 0.7rem; cursor: pointer; transition: all 0.15s; }
-    .access-chip.selected { background: #e60000; color: white; border-color: #e60000; }
-    .access-chip.team-chip { font-weight: 500; }
-    .access-chip .chip-avatar { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.55rem; font-weight: 700; }
-    .access-chip.selected .chip-avatar { background: rgba(255,255,255,0.3); }
-    .access-chip:not(.selected) .chip-avatar { background: #e60000; color: white; }
-
     .error-banner { background: #fff5f5; border: 1px solid #fcc; border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; color: #c00; font-size: 0.75rem; }
 
     @media (min-width: 500px) {
@@ -142,6 +136,7 @@
         <div class="dropdown-label">Mon équipe</div>
         <div id="teamMembersList"><div style="color:#bbb;font-size:0.8rem;">Chargement...</div></div>
       </div>
+      <div class="dropdown-logout" onclick="logout()">Se déconnecter</div>
     </div>
   </div>
 </header>
@@ -188,14 +183,6 @@
       </select>
       <input type="text" id="fiche-type-autre" placeholder="Précisez..." style="display:none;margin-top:5px;">
     </div>
-    <div class="field">
-      <label>Accès à la fiche</label>
-      <div class="access-list" id="access-list">
-        <div class="access-chip team-chip selected" data-nivol="__TEAM__" onclick="toggleAccess(this)">
-          <span class="chip-avatar">T</span> Toute l'équipe
-        </div>
-      </div>
-    </div>
     <div class="btn-row">
       <button class="btn-cancel" onclick="closeFicheModal()">Annuler</button>
       <button class="btn-save" onclick="confirmCreateFiche()">Créer</button>
@@ -205,7 +192,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
+  import { getAuth, onAuthStateChanged, deleteUser } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
   import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -224,11 +211,11 @@
 
   let CURRENT_NIVOL = null;
   let currentEquipeId = null;
+  let chefDePosteNivol = null;
   let teamMembers = [];
   let allFiches = [];
   let visibleFichesCount = 5;
   let anonymeCounter = 0;
-  let selectedAccess = ['__TEAM__'];
 
   // Couleurs par type de soins
   const TYPE_COLORS = {
@@ -254,7 +241,6 @@
 
     CURRENT_NIVOL = user.displayName;
 
-    // Vérifier que le NIVOL existe dans la base
     try {
       const userSnap = await getDoc(doc(db, 'U', CURRENT_NIVOL));
       if (!userSnap.exists()) {
@@ -286,7 +272,10 @@
 
         await loadTeam(currentEquipeId);
 
-        // Compter les anonymes existants (sur toutes les fiches de l'équipe)
+        // Trouver le Chef de Poste de l'équipe
+        await findChefDePoste();
+
+        // Compter les anonymes existants
         const allEquipeFiches = await getDocs(query(collection(db, 'I'), where('equipe', '==', currentEquipeId)));
         allEquipeFiches.forEach(d => {
           const vnom = d.data().victimeNom || '';
@@ -302,6 +291,20 @@
     } catch (e) {
       console.error(e);
       document.getElementById('fiches-list').innerHTML = `<div class="error-banner">Erreur: ${e.message}</div>`;
+    }
+  }
+
+  async function findChefDePoste() {
+    try {
+      const q = query(collection(db, 'U'), where('E', '==', currentEquipeId));
+      const snap = await getDocs(q);
+      snap.forEach(d => {
+        if (d.data().F === 'Chef de Poste') {
+          chefDePosteNivol = d.id;
+        }
+      });
+    } catch (e) {
+      console.error('Erreur recherche CDP:', e);
     }
   }
 
@@ -346,47 +349,6 @@
     } catch (e) { container.innerHTML = '<div style="color:#c00;font-size:0.8rem;">Erreur</div>'; }
   }
 
-  function buildAccessList() {
-    const container = document.getElementById('access-list');
-    let html = `<div class="access-chip team-chip ${selectedAccess.includes('__TEAM__') ? 'selected' : ''}" data-nivol="__TEAM__" onclick="toggleAccess(this)">
-      <span class="chip-avatar">T</span> Toute l'équipe
-    </div>`;
-    
-    teamMembers.forEach(m => {
-      const isSelected = selectedAccess.includes(m.nivol);
-      html += `<div class="access-chip ${isSelected ? 'selected' : ''}" data-nivol="${m.nivol}" onclick="toggleAccess(this)">
-        <span class="chip-avatar">${getInitials(m.nom)}</span> ${m.nom}
-      </div>`;
-    });
-    container.innerHTML = html;
-  }
-
-  window.toggleAccess = function(chip) {
-    const nivol = chip.dataset.nivol;
-    
-    if (nivol === '__TEAM__') {
-      if (selectedAccess.includes('__TEAM__')) {
-        selectedAccess = [];
-      } else {
-        selectedAccess = ['__TEAM__'];
-      }
-    } else {
-      if (selectedAccess.includes(nivol)) {
-        selectedAccess = selectedAccess.filter(n => n !== nivol);
-      } else {
-        selectedAccess = selectedAccess.filter(n => n !== '__TEAM__');
-        selectedAccess.push(nivol);
-      }
-      if (selectedAccess.length === teamMembers.length && teamMembers.length > 0) {
-        selectedAccess = ['__TEAM__'];
-      }
-      if (selectedAccess.length === 0) {
-        selectedAccess = ['__TEAM__'];
-      }
-    }
-    buildAccessList();
-  };
-
   // ========== FICHES (filtrées par accès) ==========
   async function loadFiches(equipeId) {
     const container = document.getElementById('fiches-list');
@@ -397,7 +359,6 @@
       allFiches = [];
       snap.forEach(d => {
         const fiche = { id: d.id, ...d.data() };
-        // Filtrer : n'afficher que les fiches auxquelles l'utilisateur a accès
         if (hasAccess(fiche)) {
           allFiches.push(fiche);
         }
@@ -493,8 +454,6 @@
     document.getElementById('fiche-type').value = '';
     document.getElementById('fiche-type-autre').value = '';
     document.getElementById('fiche-type-autre').style.display = 'none';
-    selectedAccess = ['__TEAM__'];
-    buildAccessList();
     document.getElementById('ficheModal').classList.add('show');
   };
 
@@ -529,13 +488,18 @@
     let typeSoins = document.getElementById('fiche-type').value;
     if (typeSoins === 'Autre') typeSoins = document.getElementById('fiche-type-autre').value.trim() || 'Autre';
 
+    // Accès automatique : l'utilisateur + le Chef de Poste
+    const accessList = [CURRENT_NIVOL];
+    if (chefDePosteNivol && chefDePosteNivol !== CURRENT_NIVOL) {
+      accessList.push(chefDePosteNivol);
+    }
+
     const now = new Date();
     const heureArrivee = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
     const id = `I-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}-${Math.random().toString(36).substring(2,6).toUpperCase()}`;
     const mcId = `MC-${id}`;
 
     try {
-      // Créer la fiche d'intervention
       await setDoc(doc(db, 'I', id), {
         equipe: currentEquipeId,
         createdAt: serverTimestamp(),
@@ -544,10 +508,9 @@
         origine: origine || null,
         typeSoins: typeSoins || null,
         mcId: mcId,
-        access: selectedAccess,
+        access: accessList,
       });
 
-      // Créer l'entrée dans la main courante
       await setDoc(doc(db, 'M', mcId), {
         equipe: currentEquipeId,
         heureArrivee: heureArrivee,
@@ -571,6 +534,18 @@
 
   window.openIntervention = function(id) { 
     window.location.href = `./intervention?id=${id}`; 
+  };
+
+  // ========== DÉCONNEXION ==========
+  window.logout = async function() {
+    if (auth.currentUser) {
+      try {
+        await deleteUser(auth.currentUser);
+      } catch (e) {
+        console.error('Erreur déconnexion:', e);
+      }
+    }
+    window.location.href = './login.html';
   };
 
   // ========== MENU COMPTE ==========
