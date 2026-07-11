@@ -133,6 +133,25 @@
     @media (min-width: 700px) {
       header .brand img { height: 28px; }
     }
+
+      .btn-logout {
+          background: none;
+          border: 1px solid #e0e0e0;
+          color: #888;
+          padding: 6px 12px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 0.7rem;
+          transition: all 0.15s;
+          margin-top: 8px;
+          width: 100%;
+      }
+
+          .btn-logout:hover {
+              background: #fff5f5;
+              border-color: #fcc;
+              color: #c00;
+          }
   </style>
 </head>
 <body>
@@ -152,20 +171,23 @@
       <span class="account-chevron">▼</span>
     </div>
     <div class="account-dropdown" id="accountDropdown">
-      <div class="dropdown-section">
-        <div class="dropdown-label">Mon identité</div>
-        <div class="dropdown-user me">
-          <div class="avatar-sm" id="dropdownAvatar">--</div>
-          <div class="info">
-            <div class="name" id="dropdownName">--</div>
-            <div class="role" id="dropdownRole">--</div>
-          </div>
+        <div class="dropdown-section">
+            <div class="dropdown-label">Mon identité</div>
+            <div class="dropdown-user me">
+                <div class="avatar-sm" id="dropdownAvatar">--</div>
+                <div class="info">
+                    <div class="name" id="dropdownName">--</div>
+                    <div class="role" id="dropdownRole">--</div>
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="dropdown-section">
-        <div class="dropdown-label">Mon équipe</div>
-        <div id="teamMembersList"><div style="color:#bbb;font-size:0.8rem;">Chargement...</div></div>
-      </div>
+        <div class="dropdown-section">
+            <div class="dropdown-label">Mon équipe</div>
+            <div id="teamMembersList"><div style="color:#bbb;font-size:0.8rem;">Chargement...</div></div>
+        </div>
+        <div class="dropdown-section">
+            <button class="btn-logout" onclick="logout()">Se déconnecter</button>
+        </div>
     </div>
   </div>
 </header>
@@ -739,7 +761,19 @@
     if (!menu.contains(e.target)) { menu.classList.remove('open'); document.getElementById('accountDropdown').classList.remove('show'); }
   });
   document.getElementById('mcModal').addEventListener('click', function(e) { if (e.target === this) closeMainCouranteModal(); });
-  document.getElementById('ficheModal').addEventListener('click', function(e) { if (e.target === this) closeFicheModal(); });
+    document.getElementById('ficheModal').addEventListener('click', function (e) { if (e.target === this) closeFicheModal(); });
+
+    window.logout = async function () {
+        const auth = getAuth();
+        if (auth.currentUser) {
+            try {
+                await auth.currentUser.delete();
+            } catch (e) {
+                console.error('Erreur déconnexion:', e);
+            }
+        }
+        window.location.href = './login.html';
+    };
 </script>
 </body>
 </html>
