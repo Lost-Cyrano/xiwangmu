@@ -2,89 +2,136 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Xiwangmu CRF</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; min-height: 100vh; }
+    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; min-height: 100vh; -webkit-tap-highlight-color: transparent; }
 
-    header { background: white; border-bottom: 1px solid #e5e5e5; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-    header .brand { display: flex; align-items: center; gap: 10px; }
-    header .brand img { height: 28px; }
-    header .brand span { font-weight: 600; font-size: 1rem; color: #1a1a1a; }
+    header { background: white; border-bottom: 1px solid #e5e5e5; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+    header .brand { display: flex; align-items: center; gap: 8px; }
+    header .brand img { height: 24px; }
+    header .brand span { font-weight: 600; font-size: 0.95rem; }
 
     .account-menu { position: relative; }
-    .account-trigger { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 6px 12px; border-radius: 8px; transition: background 0.15s; }
+    .account-trigger { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 5px 10px; border-radius: 8px; transition: background 0.15s; }
     .account-trigger:hover { background: #f5f5f5; }
-    .account-avatar { width: 36px; height: 36px; border-radius: 50%; background: #e60000; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.85rem; }
-    .account-info { text-align: right; }
-    .account-name { font-weight: 600; font-size: 0.85rem; line-height: 1.2; }
-    .account-role { font-size: 0.75rem; color: #888; }
-    .account-chevron { font-size: 0.7rem; color: #888; transition: transform 0.2s; }
+    .account-avatar { width: 32px; height: 32px; border-radius: 50%; background: #e60000; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.8rem; flex-shrink: 0; }
+    .account-info { text-align: right; display: none; }
+    .account-chevron { font-size: 0.65rem; color: #888; transition: transform 0.2s; }
 
-    .account-dropdown { display: none; position: absolute; top: 100%; right: 0; margin-top: 8px; background: white; border-radius: 12px; border: 1px solid #e5e5e5; box-shadow: 0 8px 30px rgba(0,0,0,0.08); min-width: 280px; z-index: 200; overflow: hidden; }
+    .account-dropdown { display: none; position: absolute; top: 100%; right: 0; margin-top: 8px; background: white; border-radius: 12px; border: 1px solid #e5e5e5; box-shadow: 0 8px 30px rgba(0,0,0,0.1); min-width: 250px; max-width: calc(100vw - 32px); z-index: 200; overflow: hidden; }
     .account-dropdown.show { display: block; }
     .account-menu.open .account-chevron { transform: rotate(180deg); }
 
-    .dropdown-section { padding: 14px 16px; }
-    .dropdown-section + .dropdown-section { border-top: 1px solid #f0f0f0; }
-    .dropdown-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: #aaa; margin-bottom: 8px; }
-    .dropdown-user { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
-    .dropdown-user .avatar-sm { width: 30px; height: 30px; border-radius: 50%; background: #e60000; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.75rem; flex-shrink: 0; }
-    .dropdown-user .info .name { font-weight: 500; font-size: 0.85rem; }
-    .dropdown-user .info .role { font-size: 0.75rem; color: #888; }
-    .dropdown-user.me { background: #fff5f5; margin: 0 -16px; padding: 8px 16px; }
+    .dropdown-section { padding: 12px 14px; }
+    .dropdown-section+.dropdown-section { border-top: 1px solid #f0f0f0; }
+    .dropdown-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; color: #aaa; margin-bottom: 6px; }
+    .dropdown-user { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+    .dropdown-user .avatar-sm { width: 28px; height: 28px; border-radius: 50%; background: #e60000; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.7rem; flex-shrink: 0; }
+    .dropdown-user .info .name { font-weight: 500; font-size: 0.8rem; }
+    .dropdown-user .info .role { font-size: 0.7rem; color: #888; }
+    .dropdown-user.me { background: #fff5f5; margin: 0 -14px; padding: 6px 14px; }
 
-    main { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
-    .card { background: white; border-radius: 12px; border: 1px solid #e5e5e5; padding: 24px; margin-bottom: 20px; }
-    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-    .card h2 { font-size: 1rem; font-weight: 600; color: #1a1a1a; }
+    main { width: 100%; max-width: 100%; margin: 0 auto; padding: 12px; }
+    @media (min-width: 500px) { main { padding: 16px; } }
+    @media (min-width: 700px) { main { padding: 24px; } }
+    @media (min-width: 1000px) { main { max-width: 1000px; padding: 32px 24px; } }
 
-    .btn-add { width: 34px; height: 34px; border-radius: 50%; background: #e60000; color: white; border: none; cursor: pointer; font-size: 1.3rem; display: flex; align-items: center; justify-content: center; transition: background 0.15s; line-height: 1; }
+    .card { background: white; border-radius: 12px; border: 1px solid #e5e5e5; padding: 14px; margin-bottom: 14px; width: 100%; }
+    @media (min-width: 500px) { .card { padding: 18px; } }
+    @media (min-width: 700px) { .card { padding: 22px; } }
+    @media (min-width: 1000px) { .card { padding: 24px; } }
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .card h2 { font-size: 0.9rem; font-weight: 600; }
+    @media (min-width: 500px) { .card h2 { font-size: 0.95rem; } }
+
+    .btn-add { width: 30px; height: 30px; border-radius: 50%; background: #e60000; color: white; border: none; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: background 0.15s; line-height: 1; flex-shrink: 0; }
     .btn-add:hover { background: #c40000; }
 
-    .empty-state { text-align: center; padding: 30px 20px; color: #bbb; font-size: 0.9rem; }
+    .empty-state { text-align: center; padding: 20px 12px; color: #bbb; font-size: 0.8rem; }
 
-    .fiche-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border: 1px solid #f0f0f0; border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
-    .fiche-item:hover { background: #fafafa; border-color: #e0e0e0; }
-    .fiche-item .fiche-info { display: flex; align-items: center; gap: 12px; }
-    .fiche-avatar { width: 38px; height: 38px; border-radius: 50%; background: #f0f0f0; color: #666; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.8rem; }
-    .fiche-name { font-weight: 500; font-size: 0.9rem; }
-    .fiche-age { font-size: 0.8rem; color: #888; }
-    .fiche-date { font-size: 0.75rem; color: #aaa; }
-    .fiche-arrow { color: #ccc; }
+    /* Fiches */
+    .fiche-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 0; margin-bottom: 0; cursor: pointer; transition: background 0.1s; gap: 8px; width: 100%; border: none; border-bottom: 1px solid #f5f5f5; }
+    .fiche-item:nth-child(even) { background: #fdfdfd; }
+    .fiche-item:nth-child(odd) { background: #ffffff; }
+    .fiche-item:hover { background: #f8f8f8; }
+    .fiche-item:active { background: #f0f0f0; }
+    .fiche-info { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
+    .fiche-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.7rem; flex-shrink: 0; color: white; }
+    .fiche-text { min-width: 0; }
+    .fiche-name { font-weight: 500; font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fiche-age { font-size: 0.7rem; color: #888; }
+    .fiche-date { font-size: 0.65rem; color: #aaa; white-space: nowrap; flex-shrink: 0; }
+    @media (min-width: 500px) {
+      .fiche-avatar { width: 34px; height: 34px; font-size: 0.75rem; }
+      .fiche-name { font-size: 0.85rem; }
+      .fiche-date { font-size: 0.7rem; }
+    }
 
-    .btn-more { display: block; width: 100%; padding: 10px; background: none; border: 1px dashed #e0e0e0; border-radius: 8px; color: #888; cursor: pointer; font-size: 0.85rem; margin-top: 8px; transition: all 0.15s; }
-    .btn-more:hover { background: #fafafa; border-color: #ccc; color: #666; }
+    .btn-more { display: block; width: 100%; padding: 8px; background: none; border: 1px dashed #e0e0e0; border-radius: 8px; color: #888; cursor: pointer; font-size: 0.75rem; margin-top: 5px; transition: all 0.15s; }
+    .btn-more:hover { background: #fafafa; }
 
-    .mc-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-    .mc-table th { color: #aaa; font-weight: 500; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.3px; padding: 8px 6px; text-align: left; border-bottom: 1px solid #f0f0f0; white-space: nowrap; }
-    .mc-table td { padding: 10px 6px; border-bottom: 1px solid #f5f5f5; vertical-align: top; line-height: 1.4; }
-    .mc-table tbody tr { cursor: pointer; transition: background 0.15s; }
-    .mc-table tbody tr:hover td { background: #fafafa; }
-    .mc-empty { text-align: center; padding: 30px 20px; color: #bbb; font-size: 0.85rem; }
+    /* Main Courante */
+    .mc-table { width: 100%; border-collapse: collapse; table-layout: auto; }
+    .mc-table thead th { color: #aaa; font-weight: 500; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.2px; padding: 8px 4px; text-align: left; border-bottom: 2px solid #f0f0f0; white-space: nowrap; background: white; }
+    @media (min-width: 500px) { .mc-table thead th { font-size: 0.65rem; padding: 9px 5px; } }
+    @media (min-width: 700px) { .mc-table thead th { font-size: 0.68rem; padding: 10px 7px; } }
+    @media (min-width: 1000px) { .mc-table thead th { font-size: 0.7rem; padding: 10px 8px; } }
 
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 300; align-items: center; justify-content: center; }
+    .mc-table tbody td { padding: 8px 4px; vertical-align: top; line-height: 1.35; font-size: 0.68rem; word-break: break-word; }
+    @media (min-width: 500px) { .mc-table tbody td { font-size: 0.72rem; padding: 9px 5px; } }
+    @media (min-width: 700px) { .mc-table tbody td { font-size: 0.76rem; padding: 10px 7px; } }
+    @media (min-width: 1000px) { .mc-table tbody td { font-size: 0.78rem; padding: 10px 8px; } }
+
+    .mc-table tbody tr { cursor: pointer; transition: background 0.1s; }
+    .mc-table tbody tr:nth-child(even) td { background: #fdfdfd; }
+    .mc-table tbody tr:nth-child(odd) td { background: #ffffff; }
+    .mc-table tbody tr:hover td { background: #f8f8f8 !important; }
+
+    .cell-time { font-weight: 500; white-space: nowrap; }
+    .cell-time.auto { color: #e60000; }
+    .cell-time.manual { color: #999; }
+    .cell-null { color: #ccc; font-style: italic; font-size: 0.9em; }
+
+    /* Modal */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 300; align-items: flex-end; justify-content: center; }
+    @media (min-width: 500px) { .modal-overlay { align-items: center; } }
     .modal-overlay.show { display: flex; }
-    .modal { background: white; border-radius: 14px; padding: 24px; width: 90%; max-width: 550px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
-    .modal h3 { font-size: 1rem; font-weight: 600; margin-bottom: 16px; }
-    .modal .form-row { display: flex; gap: 10px; margin-bottom: 10px; }
-    .modal .form-row > * { flex: 1; }
-    .modal label { font-size: 0.75rem; color: #888; display: block; margin-bottom: 4px; }
-    .modal input, .modal select, .modal textarea { width: 100%; padding: 9px 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.85rem; font-family: inherit; }
-    .modal textarea { resize: vertical; min-height: 70px; }
-    .modal .btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
-    .btn-cancel { background: #f0f0f0; color: #333; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; }
+    .modal { background: white; border-radius: 16px 16px 0 0; padding: 18px 14px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: 0 -4px 20px rgba(0,0,0,0.1); }
+    @media (min-width: 500px) { .modal { border-radius: 14px; width: 90%; max-width: 440px; max-height: 90vh; } }
+    .modal h3 { font-size: 0.9rem; font-weight: 600; margin-bottom: 12px; }
+    .modal .field { margin-bottom: 10px; }
+    .modal label { font-size: 0.7rem; color: #888; display: block; margin-bottom: 2px; }
+    .modal input, .modal select, .modal textarea { width: 100%; padding: 9px 10px; border: 1px solid #e5e5e5; border-radius: 8px; font-size: 0.8rem; font-family: inherit; background: #fafafa; transition: border 0.15s; }
+    .modal input:focus, .modal select:focus, .modal textarea:focus { outline: none; border-color: #e60000; background: white; }
+    .modal textarea { resize: vertical; min-height: 55px; }
+    .modal .btn-row { display: flex; gap: 6px; justify-content: flex-end; margin-top: 14px; flex-wrap: wrap; }
+    .btn-cancel { background: #f0f0f0; color: #333; border: none; padding: 9px 14px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
     .btn-cancel:hover { background: #e0e0e0; }
-    .btn-save { background: #e60000; color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; }
+    .btn-save { background: #e60000; color: white; border: none; padding: 9px 14px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
     .btn-save:hover { background: #c40000; }
+    .btn-delete { background: white; color: #c00; border: 1px solid #fcc; padding: 9px 14px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; margin-right: auto; }
+    .btn-delete:hover { background: #fff5f5; }
 
-    .error-banner { background: #fff5f5; border: 1px solid #fcc; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; color: #c00; font-size: 0.85rem; }
+    /* Sélecteur d'accès (fiche) */
+    .access-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .access-chip { display: flex; align-items: center; gap: 4px; padding: 5px 8px; border-radius: 14px; border: 1px solid #e0e0e0; background: white; font-size: 0.7rem; cursor: pointer; transition: all 0.15s; }
+    .access-chip.selected { background: #e60000; color: white; border-color: #e60000; }
+    .access-chip.team-chip { font-weight: 500; }
+    .access-chip .chip-avatar { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.55rem; font-weight: 700; }
+    .access-chip.selected .chip-avatar { background: rgba(255,255,255,0.3); }
+    .access-chip:not(.selected) .chip-avatar { background: #e60000; color: white; }
 
-    @media (max-width: 700px) {
-      .mc-table { font-size: 0.7rem; }
-      .mc-table th, .mc-table td { padding: 6px 3px; }
-      .modal .form-row { flex-direction: column; gap: 6px; }
+    .error-banner { background: #fff5f5; border: 1px solid #fcc; border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; color: #c00; font-size: 0.75rem; }
+
+    @media (min-width: 500px) {
+      header .account-info { display: block; }
+      header { padding: 12px 20px; }
+      header .brand img { height: 26px; }
+    }
+    @media (min-width: 700px) {
+      header .brand img { height: 28px; }
     }
   </style>
 </head>
@@ -95,7 +142,6 @@
     <img src="https://github.com/Lost-Cyrano/xiwangmu/blob/main/images/Xiwangmu.png?raw=true" alt="Xiwangmu">
     <span>Xiwangmu CRF</span>
   </div>
-
   <div class="account-menu" id="accountMenu">
     <div class="account-trigger" onclick="toggleAccountMenu()">
       <div class="account-info">
@@ -118,74 +164,91 @@
       </div>
       <div class="dropdown-section">
         <div class="dropdown-label">Mon équipe</div>
-        <div id="teamMembersList">
-          <div style="color:#bbb;font-size:0.85rem;">Chargement...</div>
-        </div>
+        <div id="teamMembersList"><div style="color:#bbb;font-size:0.8rem;">Chargement...</div></div>
       </div>
     </div>
   </div>
 </header>
 
 <main>
-  <div id="debug-info" style="display:none;"></div>
-
-  <!-- Fiches d'Intervention -->
   <div class="card">
     <div class="card-header">
       <h2>Fiches d'Intervention</h2>
-      <button class="btn-add" onclick="createIntervention()" title="Nouvelle prise en charge">+</button>
+      <button class="btn-add" onclick="openFicheModal()" title="Nouvelle prise en charge">+</button>
     </div>
-    <div id="fiches-list">
-      <div class="empty-state">Chargement...</div>
-    </div>
+    <div id="fiches-list"><div class="empty-state">Chargement...</div></div>
     <button class="btn-more" id="btn-more-fiches" style="display:none;" onclick="showMoreFiches()">Afficher plus</button>
   </div>
 
-  <!-- Main Courante -->
   <div class="card">
     <div class="card-header">
       <h2>Main Courante</h2>
       <button class="btn-add" onclick="openMainCouranteModal()" title="Ajouter une entrée">+</button>
     </div>
-    <div id="mc-container">
-      <div class="mc-empty">Chargement...</div>
-    </div>
+    <div id="mc-container"><div class="empty-state">Chargement...</div></div>
   </div>
 </main>
+
+<!-- Modal création fiche -->
+<div class="modal-overlay" id="ficheModal">
+  <div class="modal">
+    <h3>Nouvelle prise en charge</h3>
+    <div class="field">
+      <label>Nom de la victime</label>
+      <input type="text" id="fiche-victime-nom" placeholder="Laisser vide = Anonyme ###">
+    </div>
+    <div class="field">
+      <label>Origine</label>
+      <select id="fiche-origine" onchange="toggleOrigineAutre()">
+        <option value="">--</option>
+        <option value="Orga">Orga</option>
+        <option value="Public">Public</option>
+        <option value="Autre">Autre</option>
+      </select>
+      <input type="text" id="fiche-origine-autre" placeholder="Précisez..." style="display:none;margin-top:5px;">
+    </div>
+    <div class="field">
+      <label>Type de soins</label>
+      <select id="fiche-type" onchange="toggleTypeAutre()">
+        <option value="">--</option>
+        <option value="Petit soin">Petit soin</option>
+        <option value="Traumatisme">Traumatisme</option>
+        <option value="Malaise/maladie">Malaise/maladie</option>
+        <option value="Inconscient">Inconscient</option>
+        <option value="Arrêt Cardiaque">Arrêt Cardiaque</option>
+        <option value="Autre">Autre</option>
+      </select>
+      <input type="text" id="fiche-type-autre" placeholder="Précisez..." style="display:none;margin-top:5px;">
+    </div>
+    <div class="field">
+      <label>Accès à la fiche</label>
+      <div class="access-list" id="access-list">
+        <div class="access-chip team-chip selected" data-nivol="__TEAM__" onclick="toggleAccess(this)">
+          <span class="chip-avatar">T</span> Toute l'équipe
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="closeFicheModal()">Annuler</button>
+      <button class="btn-save" onclick="confirmCreateFiche()">Créer</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal Main Courante -->
 <div class="modal-overlay" id="mcModal">
   <div class="modal">
-    <h3>Ajouter à la main courante</h3>
-    <div class="form-row">
-      <div><label>Heure arrivée</label><input type="time" id="mc-heure-arrivee"></div>
-      <div><label>Heure départ</label><input type="time" id="mc-heure-depart"></div>
-    </div>
-    <div class="form-row">
-      <div><label>Origine</label><input type="text" id="mc-origine" placeholder="Qui émet ?"></div>
-      <div><label>Destinataire</label><input type="text" id="mc-destinataire" placeholder="Qui reçoit ?"></div>
-    </div>
-    <div class="form-row">
-      <div><label>Identité / N° fiche victime</label><input type="text" id="mc-victime" placeholder="Nom ou n° de fiche"></div>
-      <div><label>Type</label>
-        <select id="mc-type">
-          <option value="">--</option>
-          <option value="Appel">Appel</option>
-          <option value="Radio">Radio</option>
-          <option value="Message">Message</option>
-          <option value="Transmission">Transmission</option>
-          <option value="Autre">Autre</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div><label>Suite / N°</label><input type="text" id="mc-suite" placeholder="Suite donnée ou numéro"></div>
-    </div>
-    <div>
+    <h3 id="mcModalTitle">Nouvelle entrée</h3>
+    <div class="field">
       <label>Description</label>
-      <textarea id="mc-description" placeholder="Détails..."></textarea>
+      <textarea id="mc-description" placeholder="Décrivez l'événement..."></textarea>
+    </div>
+    <div class="field">
+      <label>Origine (optionnel)</label>
+      <input type="text" id="mc-origine" placeholder="Qui émet ?">
     </div>
     <div class="btn-row">
+      <button class="btn-delete" id="mc-delete-btn" style="display:none;" onclick="deleteMainCouranteFromModal()">Supprimer</button>
       <button class="btn-cancel" onclick="closeMainCouranteModal()">Annuler</button>
       <button class="btn-save" onclick="saveMainCourante()">Enregistrer</button>
     </div>
@@ -194,7 +257,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-  import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAigiFFGONooT17W11gnABs1aHKN0O3N9s",
@@ -211,47 +274,68 @@
 
   const CURRENT_NIVOL = "00001483594B";
   let currentEquipeId = null;
+  let currentTeamName = '';
+  let teamMembers = [];
   let allFiches = [];
   let visibleFichesCount = 5;
+  let anonymeCounter = 0;
+  let mcUnsubscribe = null;
+  let selectedAccess = ['__TEAM__'];
+
+  // Couleurs par type de soins — une seule teinte par type, distincte, dans le thème
+  const TYPE_COLORS = {
+    'Petit soin':        '#78909c',   // Gris-bleu — soin léger
+    'Traumatisme':       '#e60000',   // Rouge CRF — blessure, urgence
+    'Malaise/maladie':   '#f9a825',   // Jaune moutarde — vigilance
+    'Inconscient':       '#6a1b9a',   // Violet — gravité neurologique
+    'Arrêt Cardiaque':   '#212121',   // Noir — urgence vitale absolue
+    'Autre':             '#546e7a',   // Bleu-gris — neutre
+    'default':           '#c4c4c4'    // Rouge CRF par défaut
+  };
+
+  function getTypeColor(type) {
+    return TYPE_COLORS[type] || TYPE_COLORS['default'];
+  }
+ 
 
   async function init() {
     try {
-      console.log('🔍 Initialisation...');
       const userSnap = await getDoc(doc(db, 'U', CURRENT_NIVOL));
-      
       if (!userSnap.exists()) {
-        console.warn('⚠️ NIVOL non trouvé:', CURRENT_NIVOL);
-        setHeader('NIVOL inconnu', '?');
-        document.getElementById('fiches-list').innerHTML = '<div class="error-banner">NIVOL non trouvé dans la base. Vérifiez Firestore.</div>';
+        document.getElementById('fiches-list').innerHTML = '<div class="error-banner">NIVOL non trouvé.</div>';
+        document.getElementById('mc-container').innerHTML = '<div class="empty-state">NIVOL non trouvé</div>';
         return;
       }
-
       const data = userSnap.data();
-      console.log('✅ Utilisateur trouvé:', data);
-      
       const nom = data.I || 'Inconnu';
       const fonction = data.F || '?';
       currentEquipeId = data.E || null;
-      
-      console.log('Équipe:', currentEquipeId);
 
       setHeader(nom, fonction);
       setDropdownIdentity(nom, fonction);
 
       if (currentEquipeId) {
-        await Promise.all([
-          loadTeam(currentEquipeId),
-          loadFiches(currentEquipeId),
-          loadMainCourante(currentEquipeId)
-        ]);
-      } else {
-        document.getElementById('teamMembersList').innerHTML = '<div style="color:#bbb;font-size:0.85rem;">Aucune équipe</div>';
-        document.getElementById('fiches-list').innerHTML = '<div class="error-banner">Vous n\'êtes rattaché à aucune équipe.</div>';
-        document.getElementById('mc-container').innerHTML = '<div class="mc-empty">Aucune équipe</div>';
-      }
+        const teamSnap = await getDoc(doc(db, 'T', currentEquipeId));
+        currentTeamName = teamSnap.exists() ? teamSnap.data().N : currentEquipeId;
 
+        await loadTeam(currentEquipeId);
+
+        const existingAnonymes = await getDocs(query(collection(db, 'I'), where('equipe', '==', currentEquipeId)));
+        existingAnonymes.forEach(d => {
+          const vnom = d.data().victimeNom || '';
+          const match = vnom.match(/^Anonyme (\d{3})$/);
+          if (match) { const num = parseInt(match[1]); if (num >= anonymeCounter) anonymeCounter = num + 1; }
+        });
+
+        await loadFiches(currentEquipeId);
+        setupMainCouranteListener(currentEquipeId);
+      } else {
+        document.getElementById('teamMembersList').innerHTML = '<div style="color:#bbb;font-size:0.8rem;">Aucune équipe</div>';
+        document.getElementById('fiches-list').innerHTML = '<div class="error-banner">Non rattaché à une équipe.</div>';
+        document.getElementById('mc-container').innerHTML = '<div class="empty-state">Aucune équipe</div>';
+      }
     } catch (e) {
-      console.error('❌ Erreur init:', e);
+      console.error(e);
       document.getElementById('fiches-list').innerHTML = `<div class="error-banner">Erreur: ${e.message}</div>`;
     }
   }
@@ -261,15 +345,13 @@
     document.getElementById('headerRole').textContent = fonction;
     document.getElementById('headerAvatar').textContent = getInitials(nom);
   }
-
   function setDropdownIdentity(nom, fonction) {
     document.getElementById('dropdownName').textContent = nom;
     document.getElementById('dropdownRole').textContent = fonction;
     document.getElementById('dropdownAvatar').textContent = getInitials(nom);
   }
-
   function getInitials(nom) {
-    if (!nom || nom === 'Inconnu' || nom === 'NIVOL inconnu') return '?';
+    if (!nom || nom === 'Inconnu') return '?';
     const parts = nom.trim().split(/\s+/);
     if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     return nom.substring(0, 2).toUpperCase();
@@ -280,263 +362,343 @@
     try {
       const teamSnap = await getDoc(doc(db, 'T', equipeId));
       const teamName = teamSnap.exists() ? teamSnap.data().N : equipeId;
-      
       const q = query(collection(db, 'U'), where('E', '==', equipeId));
-      const membersSnap = await getDocs(q);
+      const snap = await getDocs(q);
       
-      let html = `<div style="font-size:0.78rem;color:#888;margin-bottom:4px;">${teamName}</div>`;
-      
-      if (membersSnap.empty) {
-        html += '<div style="color:#bbb;font-size:0.85rem;">Aucun membre</div>';
+      teamMembers = [];
+      snap.forEach(d => teamMembers.push({ nivol: d.id, nom: d.data().I || '?', fonction: d.data().F || '?' }));
+
+      let html = `<div style="font-size:0.7rem;color:#888;margin-bottom:4px;">${teamName}</div>`;
+      if (snap.empty) {
+        html += '<div style="color:#bbb;font-size:0.8rem;">Aucun membre</div>';
       } else {
-        membersSnap.forEach(docSnap => {
-          const m = docSnap.data();
-          const isMe = docSnap.id === CURRENT_NIVOL;
-          html += `
-            <div class="dropdown-user${isMe ? ' me' : ''}">
-              <div class="avatar-sm">${getInitials(m.I || '?')}</div>
-              <div class="info">
-                <div class="name">${m.I || '?'}${isMe ? ' (moi)' : ''}</div>
-                <div class="role">${m.F || '?'}</div>
-              </div>
-            </div>`;
+        snap.forEach(d => {
+          const m = d.data(); const isMe = d.id === CURRENT_NIVOL;
+          html += `<div class="dropdown-user${isMe?' me':''}"><div class="avatar-sm">${getInitials(m.I||'?')}</div><div class="info"><div class="name">${m.I||'?'}${isMe?' (moi)':''}</div><div class="role">${m.F||'?'}</div></div></div>`;
         });
       }
       container.innerHTML = html;
-    } catch (e) {
-      console.error('Erreur équipe:', e);
-      container.innerHTML = '<div style="color:#c00;font-size:0.85rem;">Erreur</div>';
-    }
+    } catch (e) { container.innerHTML = '<div style="color:#c00;font-size:0.8rem;">Erreur</div>'; }
   }
 
-  // ========== FICHES D'INTERVENTION ==========
+  function buildAccessList() {
+    const container = document.getElementById('access-list');
+    let html = `<div class="access-chip team-chip ${selectedAccess.includes('__TEAM__') ? 'selected' : ''}" data-nivol="__TEAM__" onclick="toggleAccess(this)">
+      <span class="chip-avatar">T</span> Toute l'équipe
+    </div>`;
+    
+    teamMembers.forEach(m => {
+      const isSelected = selectedAccess.includes(m.nivol);
+      html += `<div class="access-chip ${isSelected ? 'selected' : ''}" data-nivol="${m.nivol}" onclick="toggleAccess(this)">
+        <span class="chip-avatar">${getInitials(m.nom)}</span> ${m.nom}
+      </div>`;
+    });
+    container.innerHTML = html;
+  }
+
+  window.toggleAccess = function(chip) {
+    const nivol = chip.dataset.nivol;
+    
+    if (nivol === '__TEAM__') {
+      // Si on clique sur "Toute l'équipe", on sélectionne tout et on désélectionne les individuels
+      if (selectedAccess.includes('__TEAM__')) {
+        selectedAccess = [];
+      } else {
+        selectedAccess = ['__TEAM__'];
+      }
+    } else {
+      // Si on clique sur un membre individuel
+      if (selectedAccess.includes(nivol)) {
+        selectedAccess = selectedAccess.filter(n => n !== nivol);
+      } else {
+        // Retirer __TEAM__ si présent
+        selectedAccess = selectedAccess.filter(n => n !== '__TEAM__');
+        selectedAccess.push(nivol);
+      }
+      // Si tous les membres sont sélectionnés, repasser en mode équipe
+      if (selectedAccess.length === teamMembers.length && teamMembers.length > 0) {
+        selectedAccess = ['__TEAM__'];
+      }
+      // Si aucun sélectionné, remettre toute l'équipe
+      if (selectedAccess.length === 0) {
+        selectedAccess = ['__TEAM__'];
+      }
+    }
+    buildAccessList();
+  };
+
+  // ========== FICHES ==========
   async function loadFiches(equipeId) {
     const container = document.getElementById('fiches-list');
     try {
-      console.log('📋 Chargement fiches pour équipe:', equipeId);
-      
-      // Requête SANS orderBy pour éviter les problèmes d'index
       const q = query(collection(db, 'I'), where('equipe', '==', equipeId));
       const snap = await getDocs(q);
-      
-      console.log(`📋 ${snap.size} fiches trouvées`);
-      
       allFiches = [];
-      snap.forEach(d => {
-        allFiches.push({ id: d.id, ...d.data() });
-      });
-
-      // Tri manuel côté client
+      snap.forEach(d => allFiches.push({ id: d.id, ...d.data() }));
       allFiches.sort((a, b) => {
-        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
-        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
-        return dateB - dateA; // décroissant
+        const da = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+        const db2 = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+        return db2 - da;
       });
-
       visibleFichesCount = 5;
       renderFiches();
-    } catch (e) {
-      console.error('❌ Erreur fiches:', e);
-      container.innerHTML = `<div class="error-banner">Erreur chargement fiches: ${e.message}</div>`;
+    } catch (e) { container.innerHTML = `<div class="error-banner">Erreur: ${e.message}</div>`; }
+  }
+
+  function getAccessLabel(accessList) {
+    if (!accessList || accessList.length === 0 || accessList.includes('__TEAM__')) return 'T';
+    if (accessList.length === 1) {
+      const m = teamMembers.find(tm => tm.nivol === accessList[0]);
+      return m ? getInitials(m.nom) : '?';
     }
+    // Plusieurs personnes = initiales de la première
+    const m = teamMembers.find(tm => tm.nivol === accessList[0]);
+    return m ? getInitials(m.nom) : String(accessList.length);
   }
 
   function renderFiches() {
     const container = document.getElementById('fiches-list');
     const btnMore = document.getElementById('btn-more-fiches');
-
-    if (allFiches.length === 0) {
-      container.innerHTML = '<div class="empty-state">Aucune prise en charge pour l\'instant</div>';
-      btnMore.style.display = 'none';
-      return;
-    }
-
+    if (allFiches.length === 0) { container.innerHTML = '<div class="empty-state">Aucune prise en charge pour l\'instant</div>'; btnMore.style.display = 'none'; return; }
     const visible = allFiches.slice(0, visibleFichesCount);
     let html = '';
     visible.forEach(f => {
-      let dateStr = 'Date inconnue';
-      if (f.createdAt) {
-        const date = f.createdAt.toDate ? f.createdAt.toDate() : new Date(f.createdAt);
-        if (!isNaN(date.getTime())) {
-          dateStr = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) + ' · ' + date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-        }
-      }
+      let dateStr = '';
+      if (f.createdAt) { const d = f.createdAt.toDate ? f.createdAt.toDate() : new Date(f.createdAt); if (!isNaN(d.getTime())) dateStr = d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
       const victime = f.victimeNom || 'Sans nom';
-      const age = f.victimeAge ? `${f.victimeAge} an${f.victimeAge > 1 ? 's' : ''}` : '';
-      html += `
-        <div class="fiche-item" onclick="openIntervention('${f.id}')">
-          <div class="fiche-info">
-            <div class="fiche-avatar">${getInitials(victime)}</div>
-            <div>
-              <div class="fiche-name">${victime}</div>
-              <div class="fiche-age">${age}</div>
-            </div>
+      const accessLabel = getAccessLabel(f.access);
+      const typeColor = getTypeColor(f.typeSoins);
+      html += `<div class="fiche-item" onclick="openIntervention('${f.id}')">
+        <div class="fiche-info">
+          <div class="fiche-avatar" style="background:${typeColor};" title="${f.typeSoins || 'Type inconnu'}">${accessLabel}</div>
+          <div class="fiche-text">
+            <div class="fiche-name">${victime}</div>
+            ${f.victimeAge ? `<div class="fiche-age">${f.victimeAge} an${f.victimeAge>1?'s':''}</div>` : ''}
           </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <div class="fiche-date">${dateStr}</div>
-            <div class="fiche-arrow">→</div>
-          </div>
-        </div>`;
+        </div>
+        <div class="fiche-date">${dateStr}</div>
+        <span style="color:#ccc;flex-shrink:0;">→</span>
+      </div>`;
     });
     container.innerHTML = html;
-
-    if (allFiches.length > visibleFichesCount) {
-      btnMore.style.display = 'block';
-      btnMore.textContent = `Afficher plus (${allFiches.length - visibleFichesCount} restante${allFiches.length - visibleFichesCount > 1 ? 's' : ''})`;
-    } else {
-      btnMore.style.display = 'none';
-    }
+    btnMore.style.display = allFiches.length > visibleFichesCount ? 'block' : 'none';
+    if (allFiches.length > visibleFichesCount) btnMore.textContent = `+ ${allFiches.length - visibleFichesCount} autre${allFiches.length - visibleFichesCount > 1 ? 's' : ''}`;
   }
 
-  window.showMoreFiches = function() {
-    visibleFichesCount = Math.min(visibleFichesCount + 5, allFiches.length);
-    renderFiches();
+  window.showMoreFiches = function() { visibleFichesCount = Math.min(visibleFichesCount + 5, allFiches.length); renderFiches(); };
+
+  // ========== FICHE MODAL ==========
+  window.openFicheModal = function() {
+    if (!currentEquipeId) { alert('Pas d\'équipe.'); return; }
+    document.getElementById('fiche-victime-nom').value = '';
+    document.getElementById('fiche-origine').value = '';
+    document.getElementById('fiche-origine-autre').value = '';
+    document.getElementById('fiche-origine-autre').style.display = 'none';
+    document.getElementById('fiche-type').value = '';
+    document.getElementById('fiche-type-autre').value = '';
+    document.getElementById('fiche-type-autre').style.display = 'none';
+    selectedAccess = ['__TEAM__'];
+    buildAccessList();
+    document.getElementById('ficheModal').classList.add('show');
   };
 
-  window.createIntervention = async function() {
-    if (!currentEquipeId) {
-      alert('Vous devez être rattaché à une équipe.');
-      return;
-    }
+  window.closeFicheModal = function() { document.getElementById('ficheModal').classList.remove('show'); };
+
+  window.toggleOrigineAutre = function() {
+    const sel = document.getElementById('fiche-origine');
+    const autre = document.getElementById('fiche-origine-autre');
+    autre.style.display = sel.value === 'Autre' ? 'block' : 'none';
+    if (sel.value !== 'Autre') autre.value = '';
+  };
+
+  window.toggleTypeAutre = function() {
+    const sel = document.getElementById('fiche-type');
+    const autre = document.getElementById('fiche-type-autre');
+    autre.style.display = sel.value === 'Autre' ? 'block' : 'none';
+    if (sel.value !== 'Autre') autre.value = '';
+  };
+
+  window.confirmCreateFiche = async function() {
+    let victimeNom = document.getElementById('fiche-victime-nom').value.trim();
+    if (!victimeNom) { anonymeCounter++; victimeNom = `Anonyme ${String(anonymeCounter).padStart(3, '0')}`; }
     
+    let origine = document.getElementById('fiche-origine').value;
+    if (origine === 'Autre') origine = document.getElementById('fiche-origine-autre').value.trim() || 'Autre';
+    
+    let typeSoins = document.getElementById('fiche-type').value;
+    if (typeSoins === 'Autre') typeSoins = document.getElementById('fiche-type-autre').value.trim() || 'Autre';
+
     const now = new Date();
+    const heureArrivee = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
     const id = `I-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}-${Math.random().toString(36).substring(2,6).toUpperCase()}`;
+    const mcId = `MC-${id}`;
 
     try {
-      console.log('🆕 Création fiche:', id);
       await setDoc(doc(db, 'I', id), {
         equipe: currentEquipeId,
         createdAt: serverTimestamp(),
-        victimeNom: '',
+        victimeNom: victimeNom,
         victimeAge: null,
+        origine: origine || null,
+        typeSoins: typeSoins || null,
+        mcId: mcId,
+        access: selectedAccess,
       });
+
+      await setDoc(doc(db, 'M', mcId), {
+        equipe: currentEquipeId,
+        heureArrivee: heureArrivee,
+        heureDepart: null,
+        origine: origine || null,
+        destinataire: currentTeamName,
+        victime: victimeNom,
+        type: typeSoins || null,
+        suite: null,
+        description: `N° de fiche d'intervention ${id} | `,
+        ficheId: id,
+        autoGenerated: true,
+      });
+
+      closeFicheModal();
       window.location.href = `./intervention?id=${id}`;
-    } catch (e) {
-      console.error('❌ Erreur création fiche:', e);
-      alert('Erreur lors de la création: ' + e.message);
-    }
+    } catch (e) { alert('Erreur: ' + e.message); }
   };
 
-  window.openIntervention = function(id) {
-    window.location.href = `./intervention?id=${id}`;
-  };
+  window.openIntervention = function(id) { window.location.href = `./intervention?id=${id}`; };
 
   // ========== MAIN COURANTE ==========
-  async function loadMainCourante(equipeId) {
-    const container = document.getElementById('mc-container');
-    try {
-      console.log('📝 Chargement main courante pour équipe:', equipeId);
-      
-      // Requête SANS orderBy
-      const q = query(collection(db, 'M'), where('equipe', '==', equipeId));
-      const snap = await getDocs(q);
-      
-      console.log(`📝 ${snap.size} entrées MC trouvées`);
-      
-      if (snap.empty) {
-        container.innerHTML = '<div class="mc-empty">Aucune entrée pour l\'instant</div>';
-        return;
-      }
-
-      // Récupérer et trier manuellement
+  function setupMainCouranteListener(equipeId) {
+    if (mcUnsubscribe) mcUnsubscribe();
+    const q = query(collection(db, 'M'), where('equipe', '==', equipeId));
+    mcUnsubscribe = onSnapshot(q, async (snap) => {
       const entries = [];
-      snap.forEach(d => entries.push({ id: d.id, ...d.data() }));
-      entries.sort((a, b) => {
-        if (a.heureArrivee && b.heureArrivee) return a.heureArrivee.localeCompare(b.heureArrivee);
-        return 0;
-      });
-
-      let html = `<table class="mc-table">
-        <thead><tr>
-          <th>Arrivée</th><th>Origine</th><th>Dest.</th><th>Description / Victime</th><th>Type</th><th>Suite / N°</th><th>Départ</th>
-        </tr></thead><tbody>`;
-
-      entries.forEach(m => {
-        html += `<tr onclick="editMainCourante('${m.id}')">
-          <td>${m.heureArrivee || '-'}</td>
-          <td>${m.origine || '-'}</td>
-          <td>${m.destinataire || '-'}</td>
-          <td>${m.description || '-'} ${m.victime ? '<br><span style="color:#888;font-size:0.75rem;">Victime: '+m.victime+'</span>' : ''}</td>
-          <td>${m.type || '-'}</td>
-          <td>${m.suite || '-'}</td>
-          <td>${m.heureDepart || '-'}</td>
-        </tr>`;
-      });
-
-      html += '</tbody></table>';
-      container.innerHTML = html;
-
-    } catch (e) {
-      console.error('❌ Erreur main courante:', e);
-      container.innerHTML = `<div class="error-banner">Erreur chargement MC: ${e.message}</div>`;
-    }
+      for (const d of snap.docs) {
+        const m = d.data();
+        let resolvedData = { ...m, id: d.id };
+        if (m.ficheId) {
+          try {
+            const ficheSnap = await getDoc(doc(db, 'I', m.ficheId));
+            if (ficheSnap.exists()) {
+              const f = ficheSnap.data();
+              resolvedData.victime = f.victimeNom || resolvedData.victime;
+              resolvedData.type = f.typeSoins || resolvedData.type;
+              resolvedData.origine = f.origine || resolvedData.origine;
+              resolvedData.description = `N° de fiche d'intervention ${m.ficheId} | `;
+              resolvedData.suite = resolvedData.suite || null;
+              resolvedData.heureDepart = resolvedData.heureDepart || null;
+            }
+          } catch (e) {}
+        }
+        entries.push(resolvedData);
+      }
+      entries.sort((a, b) => (b.heureArrivee || '').localeCompare(a.heureArrivee || ''));
+      renderMainCourante(entries);
+    }, (e) => {
+      document.getElementById('mc-container').innerHTML = `<div class="error-banner">Erreur: ${e.message}</div>`;
+    });
   }
 
+  function renderMainCourante(entries) {
+    const container = document.getElementById('mc-container');
+    if (entries.length === 0) {
+      container.innerHTML = '<div class="empty-state">Aucune entrée pour l\'instant</div>';
+      return;
+    }
+
+    let html = `<table class="mc-table">
+      <thead><tr>
+        <th>Arrivée</th><th>Origine</th><th>Dest.</th><th>Description / Victime</th><th>Type</th><th>Suite / N°</th><th>Départ</th>
+      </tr></thead><tbody>`;
+
+    entries.forEach(m => {
+      const isAuto = m.autoGenerated === true;
+      const timeClass = isAuto ? 'auto' : 'manual';
+      const descParts = (m.description || '').split('|');
+      const descMain = descParts[0] || '';
+      const descVictime = m.victime || (descParts[1] ? descParts[1].trim() : '');
+
+      html += `<tr onclick="editMainCourante('${m.id}', ${isAuto})">
+        <td class="cell-time ${timeClass}">${m.heureArrivee || '<span class="cell-null">—</span>'}</td>
+        <td>${m.origine || '<span class="cell-null">—</span>'}</td>
+        <td>${m.destinataire || currentTeamName || '<span class="cell-null">—</span>'}</td>
+        <td>${descMain}${descVictime ? '<br><span style="font-size:0.9em;color:#888;">'+descVictime+'</span>' : ''}</td>
+        <td>${m.type || '<span class="cell-null">—</span>'}</td>
+        <td>${m.suite || '<span class="cell-null">—</span>'}</td>
+        <td>${m.heureDepart || '<span class="cell-null">—</span>'}</td>
+      </tr>`;
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  }
+
+  // ========== MC MODAL ==========
   window.openMainCouranteModal = function() {
-    document.getElementById('mc-heure-arrivee').value = '';
-    document.getElementById('mc-heure-depart').value = '';
-    document.getElementById('mc-origine').value = '';
-    document.getElementById('mc-destinataire').value = '';
-    document.getElementById('mc-victime').value = '';
-    document.getElementById('mc-type').value = '';
-    document.getElementById('mc-suite').value = '';
+    document.getElementById('mcModalTitle').textContent = 'Nouvelle entrée';
     document.getElementById('mc-description').value = '';
+    document.getElementById('mc-origine').value = '';
     document.getElementById('mcModal').dataset.editId = '';
+    document.getElementById('mcModal').dataset.isAuto = 'false';
+    document.getElementById('mc-delete-btn').style.display = 'none';
     document.getElementById('mcModal').classList.add('show');
   };
 
-  window.closeMainCouranteModal = function() {
-    document.getElementById('mcModal').classList.remove('show');
-  };
+  window.closeMainCouranteModal = function() { document.getElementById('mcModal').classList.remove('show'); };
 
   window.saveMainCourante = async function() {
     if (!currentEquipeId) return;
+    const editId = document.getElementById('mcModal').dataset.editId;
+    const isAuto = document.getElementById('mcModal').dataset.isAuto === 'true';
+    const now = new Date();
+    const heureArrivee = editId ? undefined : `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
     const data = {
       equipe: currentEquipeId,
-      heureArrivee: document.getElementById('mc-heure-arrivee').value || null,
-      heureDepart: document.getElementById('mc-heure-depart').value || null,
-      origine: document.getElementById('mc-origine').value.trim(),
-      destinataire: document.getElementById('mc-destinataire').value.trim(),
-      victime: document.getElementById('mc-victime').value.trim(),
-      type: document.getElementById('mc-type').value,
-      suite: document.getElementById('mc-suite').value.trim(),
-      description: document.getElementById('mc-description').value.trim(),
-      updatedAt: serverTimestamp()
+      destinataire: currentTeamName,
+      origine: document.getElementById('mc-origine').value.trim() || null,
+      description: document.getElementById('mc-description').value.trim() || null,
     };
+    
+    if (!isAuto) {
+      data.type = null;
+      data.suite = null;
+      data.heureDepart = null;
+      data.victime = null;
+      data.autoGenerated = false;
+    }
+    
+    if (heureArrivee) data.heureArrivee = heureArrivee;
 
-    const editId = document.getElementById('mcModal').dataset.editId;
-    const docId = editId || `MC-${Date.now()}-${Math.random().toString(36).substring(2,5).toUpperCase()}`;
+    const docId = editId || `MC-manual-${Date.now()}-${Math.random().toString(36).substring(2,5).toUpperCase()}`;
 
     try {
-      console.log('💾 Sauvegarde MC:', docId);
       await setDoc(doc(db, 'M', docId), data, { merge: true });
       closeMainCouranteModal();
-      await loadMainCourante(currentEquipeId);
-    } catch (e) {
-      console.error('❌ Erreur sauvegarde MC:', e);
-      alert('Erreur: ' + e.message);
-    }
+    } catch (e) { alert('Erreur: ' + e.message); }
   };
 
-  window.editMainCourante = async function(id) {
+  window.editMainCourante = async function(id, isAuto) {
     try {
       const snap = await getDoc(doc(db, 'M', id));
       if (!snap.exists()) return;
       const m = snap.data();
-      document.getElementById('mc-heure-arrivee').value = m.heureArrivee || '';
-      document.getElementById('mc-heure-depart').value = m.heureDepart || '';
-      document.getElementById('mc-origine').value = m.origine || '';
-      document.getElementById('mc-destinataire').value = m.destinataire || '';
-      document.getElementById('mc-victime').value = m.victime || '';
-      document.getElementById('mc-type').value = m.type || '';
-      document.getElementById('mc-suite').value = m.suite || '';
+      document.getElementById('mcModalTitle').textContent = isAuto ? 'Modifier (fiche liée)' : 'Modifier l\'entrée';
       document.getElementById('mc-description').value = m.description || '';
+      document.getElementById('mc-origine').value = m.origine || '';
       document.getElementById('mcModal').dataset.editId = id;
+      document.getElementById('mcModal').dataset.isAuto = isAuto ? 'true' : 'false';
+      document.getElementById('mc-delete-btn').style.display = isAuto ? 'none' : 'inline-block';
       document.getElementById('mcModal').classList.add('show');
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) { console.error(e); }
+  };
+
+  window.deleteMainCouranteFromModal = async function() {
+    const editId = document.getElementById('mcModal').dataset.editId;
+    const isAuto = document.getElementById('mcModal').dataset.isAuto === 'true';
+    if (!editId) return;
+    if (isAuto) { alert('Les entrées liées à une fiche d\'intervention ne peuvent pas être supprimées ici.'); return; }
+    if (!confirm('Supprimer cette entrée ?')) return;
+    try { await deleteDoc(doc(db, 'M', editId)); closeMainCouranteModal(); } catch (e) { alert('Erreur: ' + e.message); }
   };
 
   window.toggleAccountMenu = function() {
@@ -548,15 +710,10 @@
 
   document.addEventListener('click', function(e) {
     const menu = document.getElementById('accountMenu');
-    if (!menu.contains(e.target)) {
-      menu.classList.remove('open');
-      document.getElementById('accountDropdown').classList.remove('show');
-    }
+    if (!menu.contains(e.target)) { menu.classList.remove('open'); document.getElementById('accountDropdown').classList.remove('show'); }
   });
-
-  document.getElementById('mcModal').addEventListener('click', function(e) {
-    if (e.target === this) closeMainCouranteModal();
-  });
+  document.getElementById('mcModal').addEventListener('click', function(e) { if (e.target === this) closeMainCouranteModal(); });
+  document.getElementById('ficheModal').addEventListener('click', function(e) { if (e.target === this) closeFicheModal(); });
 
   init();
 </script>
