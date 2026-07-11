@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xiwangmu CRF</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; min-height: 100vh; }
+
+    header { background: white; border-bottom: 1px solid #e5e5e5; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+    header .brand { display: flex; align-items: center; gap: 10px; }
+    header .brand img { height: 28px; }
+    header .brand span { font-weight: 600; font-size: 1rem; color: #1a1a1a; }
+
+    .account-menu { position: relative; }
+    .account-trigger { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 6px 12px; border-radius: 8px; transition: background 0.15s; }
+    .account-trigger:hover { background: #f5f5f5; }
+    .account-avatar { width: 36px; height: 36px; border-radius: 50%; background: #e60000; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.85rem; }
+    .account-info { text-align: right; }
+    .account-name { font-weight: 600; font-size: 0.85rem; line-height: 1.2; }
+    .account-role { font-size: 0.75rem; color: #888; }
+    .account-chevron { font-size: 0.7rem; color: #888; transition: transform 0.2s; }
+
+    .account-dropdown { display: none; position: absolute; top: 100%; right: 0; margin-top: 8px; background: white; border-radius: 12px; border: 1px solid #e5e5e5; box-shadow: 0 8px 30px rgba(0,0,0,0.08); min-width: 280px; z-index: 200; overflow: hidden; }
+    .account-dropdown.show { display: block; }
+    .account-menu.open .account-chevron { transform: rotate(180deg); }
+
+    .dropdown-section { padding: 14px 16px; }
+    .dropdown-section + .dropdown-section { border-top: 1px solid #f0f0f0; }
+    .dropdown-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: #aaa; margin-bottom: 8px; }
+    .dropdown-user { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+    .dropdown-user .avatar-sm { width: 30px; height: 30px; border-radius: 50%; background: #e60000; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.75rem; flex-shrink: 0; }
+    .dropdown-user .info .name { font-weight: 500; font-size: 0.85rem; }
+    .dropdown-user .info .role { font-size: 0.75rem; color: #888; }
+    .dropdown-user.me { background: #fff5f5; margin: 0 -16px; padding: 8px 16px; }
+
+    main { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+    .card { background: white; border-radius: 12px; border: 1px solid #e5e5e5; padding: 24px; margin-bottom: 20px; }
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .card h2 { font-size: 1rem; font-weight: 600; color: #1a1a1a; }
+
+    .btn-add { width: 34px; height: 34px; border-radius: 50%; background: #e60000; color: white; border: none; cursor: pointer; font-size: 1.3rem; display: flex; align-items: center; justify-content: center; transition: background 0.15s; line-height: 1; }
+    .btn-add:hover { background: #c40000; }
+
+    .empty-state { text-align: center; padding: 30px 20px; color: #bbb; font-size: 0.9rem; }
+
+    .fiche-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border: 1px solid #f0f0f0; border-radius: 10px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+    .fiche-item:hover { background: #fafafa; border-color: #e0e0e0; }
+    .fiche-item .fiche-info { display: flex; align-items: center; gap: 12px; }
+    .fiche-avatar { width: 38px; height: 38px; border-radius: 50%; background: #f0f0f0; color: #666; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.8rem; }
+    .fiche-name { font-weight: 500; font-size: 0.9rem; }
+    .fiche-age { font-size: 0.8rem; color: #888; }
+    .fiche-date { font-size: 0.75rem; color: #aaa; }
+    .fiche-arrow { color: #ccc; }
+
+    .btn-more { display: block; width: 100%; padding: 10px; background: none; border: 1px dashed #e0e0e0; border-radius: 8px; color: #888; cursor: pointer; font-size: 0.85rem; margin-top: 8px; transition: all 0.15s; }
+    .btn-more:hover { background: #fafafa; border-color: #ccc; color: #666; }
+
+    .mc-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .mc-table th { color: #aaa; font-weight: 500; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.3px; padding: 8px 6px; text-align: left; border-bottom: 1px solid #f0f0f0; white-space: nowrap; }
+    .mc-table td { padding: 10px 6px; border-bottom: 1px solid #f5f5f5; vertical-align: top; line-height: 1.4; }
+    .mc-table tbody tr { cursor: pointer; transition: background 0.15s; }
+    .mc-table tbody tr:hover td { background: #fafafa; }
+    .mc-empty { text-align: center; padding: 30px 20px; color: #bbb; font-size: 0.85rem; }
+
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 300; align-items: center; justify-content: center; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: white; border-radius: 14px; padding: 24px; width: 90%; max-width: 550px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+    .modal h3 { font-size: 1rem; font-weight: 600; margin-bottom: 16px; }
+    .modal .form-row { display: flex; gap: 10px; margin-bottom: 10px; }
+    .modal .form-row > * { flex: 1; }
+    .modal label { font-size: 0.75rem; color: #888; display: block; margin-bottom: 4px; }
+    .modal input, .modal select, .modal textarea { width: 100%; padding: 9px 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 0.85rem; font-family: inherit; }
+    .modal textarea { resize: vertical; min-height: 70px; }
+    .modal .btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+    .btn-cancel { background: #f0f0f0; color: #333; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; }
+    .btn-cancel:hover { background: #e0e0e0; }
+    .btn-save { background: #e60000; color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; }
+    .btn-save:hover { background: #c40000; }
+
+    .error-banner { background: #fff5f5; border: 1px solid #fcc; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; color: #c00; font-size: 0.85rem; }
+
+    @media (max-width: 700px) {
+      .mc-table { font-size: 0.7rem; }
+      .mc-table th, .mc-table td { padding: 6px 3px; }
+      .modal .form-row { flex-direction: column; gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <img src="https://github.com/Lost-Cyrano/xiwangmu/blob/main/images/Xiwangmu.png?raw=true" alt="Xiwangmu">
+    <span>Xiwangmu CRF</span>
+  </div>
+
+  <div class="account-menu" id="accountMenu">
+    <div class="account-trigger" onclick="toggleAccountMenu()">
+      <div class="account-info">
+        <div class="account-name" id="headerName">--</div>
+        <div class="account-role" id="headerRole">--</div>
+      </div>
+      <div class="account-avatar" id="headerAvatar">--</div>
+      <span class="account-chevron">▼</span>
+    </div>
+    <div class="account-dropdown" id="accountDropdown">
+      <div class="dropdown-section">
+        <div class="dropdown-label">Mon identité</div>
+        <div class="dropdown-user me">
+          <div class="avatar-sm" id="dropdownAvatar">--</div>
+          <div class="info">
+            <div class="name" id="dropdownName">--</div>
+            <div class="role" id="dropdownRole">--</div>
+          </div>
+        </div>
+      </div>
+      <div class="dropdown-section">
+        <div class="dropdown-label">Mon équipe</div>
+        <div id="teamMembersList">
+          <div style="color:#bbb;font-size:0.85rem;">Chargement...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div id="debug-info" style="display:none;"></div>
+
+  <!-- Fiches d'Intervention -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Fiches d'Intervention</h2>
+      <button class="btn-add" onclick="createIntervention()" title="Nouvelle prise en charge">+</button>
+    </div>
+    <div id="fiches-list">
+      <div class="empty-state">Chargement...</div>
+    </div>
+    <button class="btn-more" id="btn-more-fiches" style="display:none;" onclick="showMoreFiches()">Afficher plus</button>
+  </div>
+
+  <!-- Main Courante -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Main Courante</h2>
+      <button class="btn-add" onclick="openMainCouranteModal()" title="Ajouter une entrée">+</button>
+    </div>
+    <div id="mc-container">
+      <div class="mc-empty">Chargement...</div>
+    </div>
+  </div>
+</main>
+
+<!-- Modal Main Courante -->
+<div class="modal-overlay" id="mcModal">
+  <div class="modal">
+    <h3>Ajouter à la main courante</h3>
+    <div class="form-row">
+      <div><label>Heure arrivée</label><input type="time" id="mc-heure-arrivee"></div>
+      <div><label>Heure départ</label><input type="time" id="mc-heure-depart"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Origine</label><input type="text" id="mc-origine" placeholder="Qui émet ?"></div>
+      <div><label>Destinataire</label><input type="text" id="mc-destinataire" placeholder="Qui reçoit ?"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Identité / N° fiche victime</label><input type="text" id="mc-victime" placeholder="Nom ou n° de fiche"></div>
+      <div><label>Type</label>
+        <select id="mc-type">
+          <option value="">--</option>
+          <option value="Appel">Appel</option>
+          <option value="Radio">Radio</option>
+          <option value="Message">Message</option>
+          <option value="Transmission">Transmission</option>
+          <option value="Autre">Autre</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div><label>Suite / N°</label><input type="text" id="mc-suite" placeholder="Suite donnée ou numéro"></div>
+    </div>
+    <div>
+      <label>Description</label>
+      <textarea id="mc-description" placeholder="Détails..."></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="closeMainCouranteModal()">Annuler</button>
+      <button class="btn-save" onclick="saveMainCourante()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAigiFFGONooT17W11gnABs1aHKN0O3N9s",
+    authDomain: "xiwangmu-crf.firebaseapp.com",
+    projectId: "xiwangmu-crf",
+    storageBucket: "xiwangmu-crf.firebasestorage.app",
+    messagingSenderId: "990701485221",
+    appId: "1:990701485221:web:efa9e1842c07af4fd1a14c",
+    measurementId: "G-J9TZ23YECY"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const CURRENT_NIVOL = "00001483594B";
+  let currentEquipeId = null;
+  let allFiches = [];
+  let visibleFichesCount = 5;
+
+  async function init() {
+    try {
+      console.log('🔍 Initialisation...');
+      const userSnap = await getDoc(doc(db, 'U', CURRENT_NIVOL));
+      
+      if (!userSnap.exists()) {
+        console.warn('⚠️ NIVOL non trouvé:', CURRENT_NIVOL);
+        setHeader('NIVOL inconnu', '?');
+        document.getElementById('fiches-list').innerHTML = '<div class="error-banner">NIVOL non trouvé dans la base. Vérifiez Firestore.</div>';
+        return;
+      }
+
+      const data = userSnap.data();
+      console.log('✅ Utilisateur trouvé:', data);
+      
+      const nom = data.I || 'Inconnu';
+      const fonction = data.F || '?';
+      currentEquipeId = data.E || null;
+      
+      console.log('Équipe:', currentEquipeId);
+
+      setHeader(nom, fonction);
+      setDropdownIdentity(nom, fonction);
+
+      if (currentEquipeId) {
+        await Promise.all([
+          loadTeam(currentEquipeId),
+          loadFiches(currentEquipeId),
+          loadMainCourante(currentEquipeId)
+        ]);
+      } else {
+        document.getElementById('teamMembersList').innerHTML = '<div style="color:#bbb;font-size:0.85rem;">Aucune équipe</div>';
+        document.getElementById('fiches-list').innerHTML = '<div class="error-banner">Vous n\'êtes rattaché à aucune équipe.</div>';
+        document.getElementById('mc-container').innerHTML = '<div class="mc-empty">Aucune équipe</div>';
+      }
+
+    } catch (e) {
+      console.error('❌ Erreur init:', e);
+      document.getElementById('fiches-list').innerHTML = `<div class="error-banner">Erreur: ${e.message}</div>`;
+    }
+  }
+
+  function setHeader(nom, fonction) {
+    document.getElementById('headerName').textContent = nom;
+    document.getElementById('headerRole').textContent = fonction;
+    document.getElementById('headerAvatar').textContent = getInitials(nom);
+  }
+
+  function setDropdownIdentity(nom, fonction) {
+    document.getElementById('dropdownName').textContent = nom;
+    document.getElementById('dropdownRole').textContent = fonction;
+    document.getElementById('dropdownAvatar').textContent = getInitials(nom);
+  }
+
+  function getInitials(nom) {
+    if (!nom || nom === 'Inconnu' || nom === 'NIVOL inconnu') return '?';
+    const parts = nom.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return nom.substring(0, 2).toUpperCase();
+  }
+
+  async function loadTeam(equipeId) {
+    const container = document.getElementById('teamMembersList');
+    try {
+      const teamSnap = await getDoc(doc(db, 'T', equipeId));
+      const teamName = teamSnap.exists() ? teamSnap.data().N : equipeId;
+      
+      const q = query(collection(db, 'U'), where('E', '==', equipeId));
+      const membersSnap = await getDocs(q);
+      
+      let html = `<div style="font-size:0.78rem;color:#888;margin-bottom:4px;">${teamName}</div>`;
+      
+      if (membersSnap.empty) {
+        html += '<div style="color:#bbb;font-size:0.85rem;">Aucun membre</div>';
+      } else {
+        membersSnap.forEach(docSnap => {
+          const m = docSnap.data();
+          const isMe = docSnap.id === CURRENT_NIVOL;
+          html += `
+            <div class="dropdown-user${isMe ? ' me' : ''}">
+              <div class="avatar-sm">${getInitials(m.I || '?')}</div>
+              <div class="info">
+                <div class="name">${m.I || '?'}${isMe ? ' (moi)' : ''}</div>
+                <div class="role">${m.F || '?'}</div>
+              </div>
+            </div>`;
+        });
+      }
+      container.innerHTML = html;
+    } catch (e) {
+      console.error('Erreur équipe:', e);
+      container.innerHTML = '<div style="color:#c00;font-size:0.85rem;">Erreur</div>';
+    }
+  }
+
+  // ========== FICHES D'INTERVENTION ==========
+  async function loadFiches(equipeId) {
+    const container = document.getElementById('fiches-list');
+    try {
+      console.log('📋 Chargement fiches pour équipe:', equipeId);
+      
+      // Requête SANS orderBy pour éviter les problèmes d'index
+      const q = query(collection(db, 'I'), where('equipe', '==', equipeId));
+      const snap = await getDocs(q);
+      
+      console.log(`📋 ${snap.size} fiches trouvées`);
+      
+      allFiches = [];
+      snap.forEach(d => {
+        allFiches.push({ id: d.id, ...d.data() });
+      });
+
+      // Tri manuel côté client
+      allFiches.sort((a, b) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+        return dateB - dateA; // décroissant
+      });
+
+      visibleFichesCount = 5;
+      renderFiches();
+    } catch (e) {
+      console.error('❌ Erreur fiches:', e);
+      container.innerHTML = `<div class="error-banner">Erreur chargement fiches: ${e.message}</div>`;
+    }
+  }
+
+  function renderFiches() {
+    const container = document.getElementById('fiches-list');
+    const btnMore = document.getElementById('btn-more-fiches');
+
+    if (allFiches.length === 0) {
+      container.innerHTML = '<div class="empty-state">Aucune prise en charge pour l\'instant</div>';
+      btnMore.style.display = 'none';
+      return;
+    }
+
+    const visible = allFiches.slice(0, visibleFichesCount);
+    let html = '';
+    visible.forEach(f => {
+      let dateStr = 'Date inconnue';
+      if (f.createdAt) {
+        const date = f.createdAt.toDate ? f.createdAt.toDate() : new Date(f.createdAt);
+        if (!isNaN(date.getTime())) {
+          dateStr = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) + ' · ' + date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        }
+      }
+      const victime = f.victimeNom || 'Sans nom';
+      const age = f.victimeAge ? `${f.victimeAge} an${f.victimeAge > 1 ? 's' : ''}` : '';
+      html += `
+        <div class="fiche-item" onclick="openIntervention('${f.id}')">
+          <div class="fiche-info">
+            <div class="fiche-avatar">${getInitials(victime)}</div>
+            <div>
+              <div class="fiche-name">${victime}</div>
+              <div class="fiche-age">${age}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="fiche-date">${dateStr}</div>
+            <div class="fiche-arrow">→</div>
+          </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+
+    if (allFiches.length > visibleFichesCount) {
+      btnMore.style.display = 'block';
+      btnMore.textContent = `Afficher plus (${allFiches.length - visibleFichesCount} restante${allFiches.length - visibleFichesCount > 1 ? 's' : ''})`;
+    } else {
+      btnMore.style.display = 'none';
+    }
+  }
+
+  window.showMoreFiches = function() {
+    visibleFichesCount = Math.min(visibleFichesCount + 5, allFiches.length);
+    renderFiches();
+  };
+
+  window.createIntervention = async function() {
+    if (!currentEquipeId) {
+      alert('Vous devez être rattaché à une équipe.');
+      return;
+    }
+    
+    const now = new Date();
+    const id = `I-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}-${Math.random().toString(36).substring(2,6).toUpperCase()}`;
+
+    try {
+      console.log('🆕 Création fiche:', id);
+      await setDoc(doc(db, 'I', id), {
+        equipe: currentEquipeId,
+        createdAt: serverTimestamp(),
+        victimeNom: '',
+        victimeAge: null,
+      });
+      window.location.href = `./intervention?id=${id}`;
+    } catch (e) {
+      console.error('❌ Erreur création fiche:', e);
+      alert('Erreur lors de la création: ' + e.message);
+    }
+  };
+
+  window.openIntervention = function(id) {
+    window.location.href = `./intervention?id=${id}`;
+  };
+
+  // ========== MAIN COURANTE ==========
+  async function loadMainCourante(equipeId) {
+    const container = document.getElementById('mc-container');
+    try {
+      console.log('📝 Chargement main courante pour équipe:', equipeId);
+      
+      // Requête SANS orderBy
+      const q = query(collection(db, 'M'), where('equipe', '==', equipeId));
+      const snap = await getDocs(q);
+      
+      console.log(`📝 ${snap.size} entrées MC trouvées`);
+      
+      if (snap.empty) {
+        container.innerHTML = '<div class="mc-empty">Aucune entrée pour l\'instant</div>';
+        return;
+      }
+
+      // Récupérer et trier manuellement
+      const entries = [];
+      snap.forEach(d => entries.push({ id: d.id, ...d.data() }));
+      entries.sort((a, b) => {
+        if (a.heureArrivee && b.heureArrivee) return a.heureArrivee.localeCompare(b.heureArrivee);
+        return 0;
+      });
+
+      let html = `<table class="mc-table">
+        <thead><tr>
+          <th>Arrivée</th><th>Origine</th><th>Dest.</th><th>Description / Victime</th><th>Type</th><th>Suite / N°</th><th>Départ</th>
+        </tr></thead><tbody>`;
+
+      entries.forEach(m => {
+        html += `<tr onclick="editMainCourante('${m.id}')">
+          <td>${m.heureArrivee || '-'}</td>
+          <td>${m.origine || '-'}</td>
+          <td>${m.destinataire || '-'}</td>
+          <td>${m.description || '-'} ${m.victime ? '<br><span style="color:#888;font-size:0.75rem;">Victime: '+m.victime+'</span>' : ''}</td>
+          <td>${m.type || '-'}</td>
+          <td>${m.suite || '-'}</td>
+          <td>${m.heureDepart || '-'}</td>
+        </tr>`;
+      });
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+
+    } catch (e) {
+      console.error('❌ Erreur main courante:', e);
+      container.innerHTML = `<div class="error-banner">Erreur chargement MC: ${e.message}</div>`;
+    }
+  }
+
+  window.openMainCouranteModal = function() {
+    document.getElementById('mc-heure-arrivee').value = '';
+    document.getElementById('mc-heure-depart').value = '';
+    document.getElementById('mc-origine').value = '';
+    document.getElementById('mc-destinataire').value = '';
+    document.getElementById('mc-victime').value = '';
+    document.getElementById('mc-type').value = '';
+    document.getElementById('mc-suite').value = '';
+    document.getElementById('mc-description').value = '';
+    document.getElementById('mcModal').dataset.editId = '';
+    document.getElementById('mcModal').classList.add('show');
+  };
+
+  window.closeMainCouranteModal = function() {
+    document.getElementById('mcModal').classList.remove('show');
+  };
+
+  window.saveMainCourante = async function() {
+    if (!currentEquipeId) return;
+
+    const data = {
+      equipe: currentEquipeId,
+      heureArrivee: document.getElementById('mc-heure-arrivee').value || null,
+      heureDepart: document.getElementById('mc-heure-depart').value || null,
+      origine: document.getElementById('mc-origine').value.trim(),
+      destinataire: document.getElementById('mc-destinataire').value.trim(),
+      victime: document.getElementById('mc-victime').value.trim(),
+      type: document.getElementById('mc-type').value,
+      suite: document.getElementById('mc-suite').value.trim(),
+      description: document.getElementById('mc-description').value.trim(),
+      updatedAt: serverTimestamp()
+    };
+
+    const editId = document.getElementById('mcModal').dataset.editId;
+    const docId = editId || `MC-${Date.now()}-${Math.random().toString(36).substring(2,5).toUpperCase()}`;
+
+    try {
+      console.log('💾 Sauvegarde MC:', docId);
+      await setDoc(doc(db, 'M', docId), data, { merge: true });
+      closeMainCouranteModal();
+      await loadMainCourante(currentEquipeId);
+    } catch (e) {
+      console.error('❌ Erreur sauvegarde MC:', e);
+      alert('Erreur: ' + e.message);
+    }
+  };
+
+  window.editMainCourante = async function(id) {
+    try {
+      const snap = await getDoc(doc(db, 'M', id));
+      if (!snap.exists()) return;
+      const m = snap.data();
+      document.getElementById('mc-heure-arrivee').value = m.heureArrivee || '';
+      document.getElementById('mc-heure-depart').value = m.heureDepart || '';
+      document.getElementById('mc-origine').value = m.origine || '';
+      document.getElementById('mc-destinataire').value = m.destinataire || '';
+      document.getElementById('mc-victime').value = m.victime || '';
+      document.getElementById('mc-type').value = m.type || '';
+      document.getElementById('mc-suite').value = m.suite || '';
+      document.getElementById('mc-description').value = m.description || '';
+      document.getElementById('mcModal').dataset.editId = id;
+      document.getElementById('mcModal').classList.add('show');
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  window.toggleAccountMenu = function() {
+    const menu = document.getElementById('accountMenu');
+    const dropdown = document.getElementById('accountDropdown');
+    menu.classList.toggle('open');
+    dropdown.classList.toggle('show');
+  };
+
+  document.addEventListener('click', function(e) {
+    const menu = document.getElementById('accountMenu');
+    if (!menu.contains(e.target)) {
+      menu.classList.remove('open');
+      document.getElementById('accountDropdown').classList.remove('show');
+    }
+  });
+
+  document.getElementById('mcModal').addEventListener('click', function(e) {
+    if (e.target === this) closeMainCouranteModal();
+  });
+
+  init();
+</script>
+</body>
+</html>
