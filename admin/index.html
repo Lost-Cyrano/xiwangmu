@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xiwangmu CRF – Administration</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; min-height: 100vh; }
+    
+    header { background: white; border-bottom: 1px solid #e5e5e5; padding: 16px 24px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+    header img { height: 32px; }
+    header h1 { font-size: 1.1rem; font-weight: 600; color: #1a1a1a; }
+
+    nav { display: flex; gap: 0; background: white; border-bottom: 1px solid #e5e5e5; padding: 0 24px; }
+    nav button { padding: 12px 20px; border: none; background: none; cursor: pointer; font-size: 0.9rem; color: #666; border-bottom: 2px solid transparent; transition: all 0.15s; }
+    nav button:hover { color: #1a1a1a; background: #f9f9f9; }
+    nav button.active { color: #e60000; border-bottom-color: #e60000; font-weight: 500; }
+
+    main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .card { background: white; border-radius: 12px; border: 1px solid #e5e5e5; padding: 24px; margin-bottom: 20px; }
+    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 16px; color: #1a1a1a; }
+
+    .form-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+    .form-row > * { flex: 1; min-width: 140px; }
+    input, select { padding: 10px 12px; border: 1px solid #d1d1d1; border-radius: 8px; font-size: 0.9rem; background: white; width: 100%; transition: border-color 0.15s; }
+    input:focus, select:focus { outline: none; border-color: #e60000; box-shadow: 0 0 0 3px rgba(230,0,0,0.08); }
+
+    button { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: all 0.15s; }
+    .btn-primary { background: #e60000; color: white; }
+    .btn-primary:hover { background: #c40000; }
+    .btn-secondary { background: #f0f0f0; color: #333; }
+    .btn-secondary:hover { background: #e0e0e0; }
+    .btn-danger { background: white; color: #c00; border: 1px solid #fcc; }
+    .btn-danger:hover { background: #fff5f5; }
+    .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+
+    .msg { font-size: 0.85rem; margin-top: 8px; }
+    .msg.error { color: #c00; }
+    .msg.success { color: #0a0; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+    th { color: #888; font-weight: 500; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    tr:hover td { background: #fafafa; }
+
+    /* ========== DRAG & DROP ========== */
+    .teams-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .team-column { background: #fafafa; border-radius: 12px; border: 2px dashed transparent; padding: 16px; min-height: 120px; transition: all 0.2s; }
+    .team-column.drag-over { border-color: #e60000; background: #fff5f5; }
+    .team-column h3 { font-size: 0.9rem; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .team-column h3 .count { background: #e60000; color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+
+    .person-chip { background: white; border: 1px solid #e5e5e5; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; cursor: grab; transition: all 0.15s; display: flex; justify-content: space-between; align-items: center; }
+    .person-chip:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-color: #ccc; }
+    .person-chip.dragging { opacity: 0.5; transform: scale(0.97); }
+    .person-chip .name { font-weight: 500; font-size: 0.9rem; }
+    .person-chip .role { font-size: 0.78rem; color: #888; }
+    .empty-team { color: #bbb; font-size: 0.85rem; text-align: center; padding: 20px 0; font-style: italic; }
+  </style>
+</head>
+<body>
+
+<header>
+  <img src="https://github.com/Lost-Cyrano/xiwangmu/blob/main/images/Xiwangmu.png?raw=true" alt="Xiwangmu">
+  <h1>Xiwangmu CRF</h1>
+</header>
+
+<nav>
+  <button class="tab-btn active" onclick="switchTab('affectations')">Affectations</button>
+  <button class="tab-btn" onclick="switchTab('personnel')">Personnel</button>
+  <button class="tab-btn" onclick="switchTab('equipes')">Équipes</button>
+</nav>
+
+<main>
+
+  <!-- AFFECTATIONS (Drag & Drop) -->
+  <div id="tab-affectations" class="tab-content active">
+    <div class="card">
+      <h2>Glissez-déposez les intervenants dans les équipes</h2>
+      <div class="teams-grid" id="teams-grid"></div>
+      <p id="a-message" class="msg"></p>
+    </div>
+  </div>
+
+  <!-- PERSONNEL -->
+  <div id="tab-personnel" class="tab-content">
+    <div class="card">
+      <h2>Ajouter ou modifier un intervenant</h2>
+      <div class="form-row">
+        <input type="text" id="p-nivol" placeholder="NIVOL (12 caractères)" pattern="[0-9A-Za-z]{12}" maxlength="12">
+        <input type="text" id="p-nom" placeholder="NOM Prénom">
+        <input type="text" id="p-fonction" placeholder="Fonction">
+      </div>
+      <div class="form-row" style="margin-top:8px;">
+        <button class="btn-primary" onclick="savePersonnel()">Enregistrer</button>
+        <button class="btn-danger" onclick="deletePersonnel()">Supprimer ce NIVOL</button>
+      </div>
+      <p id="p-message" class="msg"></p>
+    </div>
+    <div class="card">
+      <h2>Intervenants</h2>
+      <input type="text" id="p-search" placeholder="Rechercher..." oninput="loadPersonnel()" style="margin-bottom:16px;">
+      <div id="personnel-list"></div>
+    </div>
+  </div>
+
+  <!-- ÉQUIPES -->
+  <div id="tab-equipes" class="tab-content">
+    <div class="card">
+      <h2>Créer ou modifier une équipe</h2>
+      <div class="form-row">
+        <input type="text" id="e-id" placeholder="Identifiant (ex: E1)">
+        <input type="text" id="e-nom" placeholder="Nom de l'équipe">
+      </div>
+      <div class="form-row" style="margin-top:8px;">
+        <button class="btn-primary" onclick="saveEquipe()">Enregistrer</button>
+        <button class="btn-danger" onclick="deleteEquipe()">Supprimer cette équipe</button>
+      </div>
+      <p id="e-message" class="msg"></p>
+    </div>
+    <div class="card">
+      <h2>Équipes existantes</h2>
+      <div id="equipes-list"></div>
+    </div>
+  </div>
+
+</main>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAigiFFGONooT17W11gnABs1aHKN0O3N9s",
+    authDomain: "xiwangmu-crf.firebaseapp.com",
+    projectId: "xiwangmu-crf",
+    storageBucket: "xiwangmu-crf.firebasestorage.app",
+    messagingSenderId: "990701485221",
+    appId: "1:990701485221:web:efa9e1842c07af4fd1a14c",
+    measurementId: "G-J9TZ23YECY"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // ============ NAVIGATION ============
+  window.switchTab = function(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+    loadAll();
+  };
+
+  async function loadAll() {
+    await loadPersonnel();
+    await loadEquipes();
+    await loadAffectations();
+  }
+  loadAll();
+
+  // ============ PERSONNEL ============
+  window.savePersonnel = async function() {
+    const msg = document.getElementById('p-message');
+    const nivol = document.getElementById('p-nivol').value.trim().toUpperCase();
+    const nom = document.getElementById('p-nom').value.trim();
+    const fonction = document.getElementById('p-fonction').value.trim();
+    msg.textContent = ''; msg.className = 'msg';
+
+    if (!/^[0-9A-Z]{12}$/.test(nivol)) { msg.textContent = 'NIVOL invalide (12 car. alphanumériques).'; msg.className = 'msg error'; return; }
+    if (!nom) { msg.textContent = 'Le nom est requis.'; msg.className = 'msg error'; return; }
+
+    try {
+      const existing = await getDoc(doc(db, 'U', nivol));
+      await setDoc(doc(db, 'U', nivol), {
+        I: nom,
+        F: fonction || 'Equipier Secouriste',
+        E: existing.exists() ? existing.data().E : null
+      }, { merge: true });
+      msg.textContent = 'Enregistré.'; msg.className = 'msg success';
+      document.getElementById('p-nivol').value = '';
+      document.getElementById('p-nom').value = '';
+      document.getElementById('p-fonction').value = '';
+      loadAll();
+    } catch (e) { msg.textContent = 'Erreur.'; msg.className = 'msg error'; }
+  };
+
+  window.deletePersonnel = async function() {
+    const msg = document.getElementById('p-message');
+    const nivol = document.getElementById('p-nivol').value.trim().toUpperCase();
+    msg.textContent = ''; msg.className = 'msg';
+    if (!/^[0-9A-Z]{12}$/.test(nivol)) { msg.textContent = 'NIVOL invalide.'; msg.className = 'msg error'; return; }
+    if (!confirm(`Supprimer ${nivol} ?`)) return;
+    try {
+      await deleteDoc(doc(db, 'U', nivol));
+      msg.textContent = 'Supprimé.'; msg.className = 'msg success';
+      document.getElementById('p-nivol').value = '';
+      loadAll();
+    } catch (e) { msg.textContent = 'Erreur.'; msg.className = 'msg error'; }
+  };
+
+  async function loadPersonnel() {
+    const container = document.getElementById('personnel-list');
+    const search = document.getElementById('p-search')?.value?.toLowerCase() || '';
+    try {
+      const snap = await getDocs(collection(db, 'U'));
+      let html = '<table><tr><th>NIVOL</th><th>Nom</th><th>Fonction</th><th>Équipe</th><th></th></tr>';
+      let count = 0;
+      snap.forEach(d => {
+        const data = d.data();
+        if (search && !d.id.toLowerCase().includes(search) && !(data.I||'').toLowerCase().includes(search)) return;
+        count++;
+        html += `<tr><td>${d.id}</td><td>${data.I||'-'}</td><td>${data.F||'-'}</td><td>${data.E||'-'}</td>
+          <td><button class="btn-secondary btn-sm" onclick="editPersonnel('${d.id}')">Modifier</button></td></tr>`;
+      });
+      html += '</table>';
+      container.innerHTML = count ? html : '<p style="color:#999;">Aucun intervenant.</p>';
+    } catch (e) { container.innerHTML = '<p class="msg error">Erreur.</p>'; }
+  }
+
+  window.editPersonnel = async function(nivol) {
+    const snap = await getDoc(doc(db, 'U', nivol));
+    if (!snap.exists()) return;
+    const d = snap.data();
+    document.getElementById('p-nivol').value = nivol;
+    document.getElementById('p-nom').value = d.I || '';
+    document.getElementById('p-fonction').value = d.F || '';
+    document.getElementById('p-message').textContent = '';
+    document.getElementById('p-message').className = 'msg';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // ============ ÉQUIPES ============
+  window.saveEquipe = async function() {
+    const msg = document.getElementById('e-message');
+    const id = document.getElementById('e-id').value.trim();
+    const nom = document.getElementById('e-nom').value.trim();
+    msg.textContent = ''; msg.className = 'msg';
+    if (!id) { msg.textContent = 'Identifiant requis.'; msg.className = 'msg error'; return; }
+    if (!nom) { msg.textContent = 'Nom requis.'; msg.className = 'msg error'; return; }
+    try {
+      await setDoc(doc(db, 'T', id), { N: nom }, { merge: true });
+      msg.textContent = 'Enregistré.'; msg.className = 'msg success';
+      document.getElementById('e-id').value = '';
+      document.getElementById('e-nom').value = '';
+      loadAll();
+    } catch (e) { msg.textContent = 'Erreur.'; msg.className = 'msg error'; }
+  };
+
+  window.deleteEquipe = async function() {
+    const msg = document.getElementById('e-message');
+    const id = document.getElementById('e-id').value.trim();
+    msg.textContent = ''; msg.className = 'msg';
+    if (!id) { msg.textContent = 'Identifiant requis.'; msg.className = 'msg error'; return; }
+    if (!confirm(`Supprimer l'équipe ${id} ? Les membres seront désaffectés.`)) return;
+    try {
+      const q = query(collection(db, 'U'), where('E', '==', id));
+      const snap = await getDocs(q);
+      for (const d of snap.docs) await setDoc(doc(db, 'U', d.id), { E: null }, { merge: true });
+      await deleteDoc(doc(db, 'T', id));
+      msg.textContent = 'Supprimée.'; msg.className = 'msg success';
+      document.getElementById('e-id').value = '';
+      loadAll();
+    } catch (e) { msg.textContent = 'Erreur.'; msg.className = 'msg error'; }
+  };
+
+  async function loadEquipes() {
+    const container = document.getElementById('equipes-list');
+    try {
+      const snap = await getDocs(collection(db, 'T'));
+      let html = '<table><tr><th>ID</th><th>Nom</th><th></th></tr>';
+      snap.forEach(d => {
+        html += `<tr><td>${d.id}</td><td>${d.data().N||'-'}</td>
+          <td><button class="btn-secondary btn-sm" onclick="editEquipe('${d.id}')">Modifier</button></td></tr>`;
+      });
+      html += '</table>';
+      container.innerHTML = snap.empty ? '<p style="color:#999;">Aucune équipe.</p>' : html;
+    } catch (e) { container.innerHTML = '<p class="msg error">Erreur.</p>'; }
+  }
+
+  window.editEquipe = async function(id) {
+    const snap = await getDoc(doc(db, 'T', id));
+    if (!snap.exists()) return;
+    document.getElementById('e-id').value = id;
+    document.getElementById('e-nom').value = snap.data().N || '';
+    document.getElementById('e-message').textContent = '';
+    document.getElementById('e-message').className = 'msg';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // ============ AFFECTATIONS (Drag & Drop) ============
+  async function loadAffectations() {
+    const grid = document.getElementById('teams-grid');
+    try {
+      const [usersSnap, teamsSnap] = await Promise.all([
+        getDocs(collection(db, 'U')),
+        getDocs(collection(db, 'T'))
+      ]);
+
+      // Indexer les utilisateurs par équipe
+      const teamsMap = new Map(); // teamId -> []
+      const unassigned = [];
+      usersSnap.forEach(d => {
+        const u = { nivol: d.id, nom: d.data().I || '?', fonction: d.data().F || '?', equipe: d.data().E || null };
+        if (u.equipe) {
+          if (!teamsMap.has(u.equipe)) teamsMap.set(u.equipe, []);
+          teamsMap.get(u.equipe).push(u);
+        } else {
+          unassigned.push(u);
+        }
+      });
+
+      let html = '';
+
+      // Colonne "Non affectée"
+      html += buildTeamColumn('non-affectee', 'Non affectés', unassigned);
+
+      // Colonnes par équipe
+      teamsSnap.forEach(t => {
+        const members = teamsMap.get(t.id) || [];
+        html += buildTeamColumn(t.id, t.data().N || t.id, members);
+      });
+
+      grid.innerHTML = html;
+
+      // Attacher les événements drag & drop
+      attachDragEvents();
+
+    } catch (e) {
+      grid.innerHTML = '<p class="msg error">Erreur de chargement.</p>';
+    }
+  }
+
+  function buildTeamColumn(teamId, teamName, members) {
+    let chips = '';
+    if (members.length === 0) {
+      chips = '<div class="empty-team">Vide</div>';
+    } else {
+      members.forEach(u => {
+        chips += `
+          <div class="person-chip" draggable="true" data-nivol="${u.nivol}" data-from="${teamId}">
+            <span class="name">${u.nom}</span>
+            <span class="role">${u.fonction}</span>
+          </div>`;
+      });
+    }
+    return `
+      <div class="team-column" data-team="${teamId}">
+        <h3>${teamName} <span class="count">${members.length}</span></h3>
+        <div class="team-members">${chips}</div>
+      </div>`;
+  }
+
+  function attachDragEvents() {
+    const chips = document.querySelectorAll('.person-chip');
+    const columns = document.querySelectorAll('.team-column');
+
+    chips.forEach(chip => {
+      chip.addEventListener('dragstart', (e) => {
+        chip.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', chip.dataset.nivol);
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      chip.addEventListener('dragend', () => chip.classList.remove('dragging'));
+    });
+
+    columns.forEach(col => {
+      col.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        col.classList.add('drag-over');
+      });
+      col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+      col.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        col.classList.remove('drag-over');
+        const nivol = e.dataTransfer.getData('text/plain');
+        const targetTeam = col.dataset.team;
+        const newTeam = targetTeam === 'non-affectee' ? null : targetTeam;
+
+        try {
+          await setDoc(doc(db, 'U', nivol), { E: newTeam }, { merge: true });
+          document.getElementById('a-message').textContent = 'Affectation mise à jour.';
+          document.getElementById('a-message').className = 'msg success';
+          loadAffectations();
+        } catch (err) {
+          document.getElementById('a-message').textContent = 'Erreur.';
+          document.getElementById('a-message').className = 'msg error';
+        }
+      });
+    });
+  }
+
+</script>
+</body>
+</html>
