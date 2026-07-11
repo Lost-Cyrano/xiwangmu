@@ -211,7 +211,6 @@
 
   let CURRENT_NIVOL = null;
   let currentEquipeId = null;
-  let currentTeamName = '';
   let chefDePosteNivol = null;
   let teamMembers = [];
   let allFiches = [];
@@ -269,7 +268,7 @@
 
       if (currentEquipeId) {
         const teamSnap = await getDoc(doc(db, 'T', currentEquipeId));
-        currentTeamName = teamSnap.exists() ? teamSnap.data().N : currentEquipeId;
+        const teamName = teamSnap.exists() ? teamSnap.data().N : currentEquipeId;
 
         await loadTeam(currentEquipeId);
 
@@ -380,7 +379,9 @@
 
   function hasAccess(fiche) {
     const access = fiche.access;
+    // Si pas d'access défini ou si c'est __TEAM__, tout le monde a accès
     if (!access || access.length === 0 || access.includes('__TEAM__')) return true;
+    // Sinon, vérifier si le NIVOL actuel est dans la liste
     return access.includes(CURRENT_NIVOL);
   }
 
@@ -390,8 +391,8 @@
       const m = teamMembers.find(tm => tm.nivol === accessList[0]);
       return m ? getInitials(m.nom) : '?';
     }
-    if (accessList.length === 2) return '2';
-    return String(accessList.length);
+    const m = teamMembers.find(tm => tm.nivol === accessList[0]);
+    return m ? getInitials(m.nom) : String(accessList.length);
   }
 
   function renderFiches() {
@@ -499,7 +500,6 @@
     const mcId = `MC-${id}`;
 
     try {
-      // Créer la fiche d'intervention
       await setDoc(doc(db, 'I', id), {
         equipe: currentEquipeId,
         createdAt: serverTimestamp(),
@@ -511,13 +511,12 @@
         access: accessList,
       });
 
-      // Créer l'entrée dans la main courante (exactement comme dans CI.html)
       await setDoc(doc(db, 'M', mcId), {
         equipe: currentEquipeId,
         heureArrivee: heureArrivee,
         heureDepart: null,
         origine: origine || null,
-        destinataire: currentTeamName,
+        destinataire: teamMembers.length > 0 ? 'Équipe' : '',
         victime: victimeNom,
         type: typeSoins || null,
         suite: null,
