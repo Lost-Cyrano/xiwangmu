@@ -257,6 +257,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
   import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -270,9 +271,10 @@
   };
 
   const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
   const db = getFirestore(app);
 
-  const CURRENT_NIVOL = "00001483594B";
+  let CURRENT_NIVOL = null;
   let currentEquipeId = null;
   let currentTeamName = '';
   let teamMembers = [];
@@ -282,30 +284,60 @@
   let mcUnsubscribe = null;
   let selectedAccess = ['__TEAM__'];
 
-  // Couleurs par type de soins — une seule teinte par type, distincte, dans le thème
+  // Couleurs par type de soins
   const TYPE_COLORS = {
-    'Petit soin':        '#78909c',   // Gris-bleu — soin léger
-    'Traumatisme':       '#e60000',   // Rouge CRF — blessure, urgence
-    'Malaise/maladie':   '#f9a825',   // Jaune moutarde — vigilance
-    'Inconscient':       '#6a1b9a',   // Violet — gravité neurologique
-    'Arrêt Cardiaque':   '#212121',   // Noir — urgence vitale absolue
-    'Autre':             '#546e7a',   // Bleu-gris — neutre
-    'default':           '#c4c4c4'    // Rouge CRF par défaut
+    'Petit soin':        '#78909c',
+    'Traumatisme':       '#e60000',
+    'Malaise/maladie':   '#f9a825',
+    'Inconscient':       '#6a1b9a',
+    'Arrêt Cardiaque':   '#212121',
+    'Autre':             '#546e7a',
+    'default':           '#c4c4c4'
   };
 
   function getTypeColor(type) {
     return TYPE_COLORS[type] || TYPE_COLORS['default'];
   }
- 
+
+  // Vérification de l'authentification et du rôle
+  onAuthStateChanged(auth, async (user) => {
+    if (!user || !user.displayName) {
+      window.location.href = './login.html?redirect=' + encodeURIComponent(window.location.href);
+      return;
+    }
+
+    CURRENT_NIVOL = user.displayName;
+    const role = user.photoURL;
+
+    // Vérifier que l'utilisateur a bien le rôle "cdp" (Chef de Poste)
+    if (role !== 'cdp') {
+      window.location.href = './user.html';
+      return;
+    }
+
+    // Vérifier que le NIVOL existe bien dans la base et a toujours le rôle Chef de Poste
+    try {
+      const userSnap = await getDoc(doc(db, 'U', CURRENT_NIVOL));
+      if (!userSnap.exists()) {
+        window.location.href = './login.html?redirect=' + encodeURIComponent(window.location.href);
+        return;
+      }
+      const userData = userSnap.data();
+      if (userData.F !== 'Chef de Poste') {
+        window.location.href = './user.html';
+        return;
+      }
+    } catch (e) {
+      window.location.href = './login.html?redirect=' + encodeURIComponent(window.location.href);
+      return;
+    }
+
+    await init();
+  });
 
   async function init() {
     try {
       const userSnap = await getDoc(doc(db, 'U', CURRENT_NIVOL));
-      if (!userSnap.exists()) {
-        document.getElementById('fiches-list').innerHTML = '<div class="error-banner">NIVOL non trouvé.</div>';
-        document.getElementById('mc-container').innerHTML = '<div class="empty-state">NIVOL non trouvé</div>';
-        return;
-      }
       const data = userSnap.data();
       const nom = data.I || 'Inconnu';
       const fonction = data.F || '?';
@@ -400,26 +432,21 @@
     const nivol = chip.dataset.nivol;
     
     if (nivol === '__TEAM__') {
-      // Si on clique sur "Toute l'équipe", on sélectionne tout et on désélectionne les individuels
       if (selectedAccess.includes('__TEAM__')) {
         selectedAccess = [];
       } else {
         selectedAccess = ['__TEAM__'];
       }
     } else {
-      // Si on clique sur un membre individuel
       if (selectedAccess.includes(nivol)) {
         selectedAccess = selectedAccess.filter(n => n !== nivol);
       } else {
-        // Retirer __TEAM__ si présent
         selectedAccess = selectedAccess.filter(n => n !== '__TEAM__');
         selectedAccess.push(nivol);
       }
-      // Si tous les membres sont sélectionnés, repasser en mode équipe
       if (selectedAccess.length === teamMembers.length && teamMembers.length > 0) {
         selectedAccess = ['__TEAM__'];
       }
-      // Si aucun sélectionné, remettre toute l'équipe
       if (selectedAccess.length === 0) {
         selectedAccess = ['__TEAM__'];
       }
@@ -451,7 +478,6 @@
       const m = teamMembers.find(tm => tm.nivol === accessList[0]);
       return m ? getInitials(m.nom) : '?';
     }
-    // Plusieurs personnes = initiales de la première
     const m = teamMembers.find(tm => tm.nivol === accessList[0]);
     return m ? getInitials(m.nom) : String(accessList.length);
   }
@@ -714,8 +740,6 @@
   });
   document.getElementById('mcModal').addEventListener('click', function(e) { if (e.target === this) closeMainCouranteModal(); });
   document.getElementById('ficheModal').addEventListener('click', function(e) { if (e.target === this) closeFicheModal(); });
-
-  init();
 </script>
 </body>
 </html>
