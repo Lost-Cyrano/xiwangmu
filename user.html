@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Xiwangmu CRF</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; min-height: 100vh; -webkit-tap-highlight-color: transparent; }
+
+    header { background: white; border-bottom: 1px solid #e5e5e5; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+    header .brand { display: flex; align-items: center; gap: 8px; }
+    header .brand img { height: 24px; }
+    header .brand span { font-weight: 600; font-size: 0.95rem; }
+
+    .account-menu { position: relative; }
+    .account-trigger { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 5px 10px; border-radius: 8px; transition: background 0.15s; }
+    .account-trigger:hover { background: #f5f5f5; }
+    .account-avatar { width: 32px; height: 32px; border-radius: 50%; background: #e60000; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.8rem; flex-shrink: 0; }
+    .account-info { text-align: right; display: none; }
+    .account-chevron { font-size: 0.65rem; color: #888; transition: transform 0.2s; }
+
+    .account-dropdown { display: none; position: absolute; top: 100%; right: 0; margin-top: 8px; background: white; border-radius: 12px; border: 1px solid #e5e5e5; box-shadow: 0 8px 30px rgba(0,0,0,0.1); min-width: 250px; max-width: calc(100vw - 32px); z-index: 200; overflow: hidden; }
+    .account-dropdown.show { display: block; }
+    .account-menu.open .account-chevron { transform: rotate(180deg); }
+
+    .dropdown-section { padding: 12px 14px; }
+    .dropdown-section+.dropdown-section { border-top: 1px solid #f0f0f0; }
+    .dropdown-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; color: #aaa; margin-bottom: 6px; }
+    .dropdown-user { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+    .dropdown-user .avatar-sm { width: 28px; height: 28px; border-radius: 50%; background: #e60000; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.7rem; flex-shrink: 0; }
+    .dropdown-user .info .name { font-weight: 500; font-size: 0.8rem; }
+    .dropdown-user .info .role { font-size: 0.7rem; color: #888; }
+    .dropdown-user.me { background: #fff5f5; margin: 0 -14px; padding: 6px 14px; }
+
+    main { width: 100%; max-width: 100%; margin: 0 auto; padding: 12px; }
+    @media (min-width: 500px) { main { padding: 16px; } }
+    @media (min-width: 700px) { main { padding: 24px; } }
+    @media (min-width: 1000px) { main { max-width: 1000px; padding: 32px 24px; } }
+
+    .card { background: white; border-radius: 12px; border: 1px solid #e5e5e5; padding: 14px; margin-bottom: 14px; width: 100%; }
+    @media (min-width: 500px) { .card { padding: 18px; } }
+    @media (min-width: 700px) { .card { padding: 22px; } }
+    @media (min-width: 1000px) { .card { padding: 24px; } }
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .card h2 { font-size: 0.9rem; font-weight: 600; }
+    @media (min-width: 500px) { .card h2 { font-size: 0.95rem; } }
+
+    .btn-add { width: 30px; height: 30px; border-radius: 50%; background: #e60000; color: white; border: none; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: background 0.15s; line-height: 1; flex-shrink: 0; }
+    .btn-add:hover { background: #c40000; }
+
+    .empty-state { text-align: center; padding: 20px 12px; color: #bbb; font-size: 0.8rem; }
+
+    /* Fiches */
+    .fiche-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 0; margin-bottom: 0; cursor: pointer; transition: background 0.1s; gap: 8px; width: 100%; border: none; border-bottom: 1px solid #f5f5f5; }
+    .fiche-item:nth-child(even) { background: #fdfdfd; }
+    .fiche-item:nth-child(odd) { background: #ffffff; }
+    .fiche-item:hover { background: #f8f8f8; }
+    .fiche-item:active { background: #f0f0f0; }
+    .fiche-info { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
+    .fiche-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.7rem; flex-shrink: 0; color: white; }
+    .fiche-text { min-width: 0; }
+    .fiche-name { font-weight: 500; font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fiche-age { font-size: 0.7rem; color: #888; }
+    .fiche-date { font-size: 0.65rem; color: #aaa; white-space: nowrap; flex-shrink: 0; }
+    @media (min-width: 500px) {
+      .fiche-avatar { width: 34px; height: 34px; font-size: 0.75rem; }
+      .fiche-name { font-size: 0.85rem; }
+      .fiche-date { font-size: 0.7rem; }
+    }
+
+    .btn-more { display: block; width: 100%; padding: 8px; background: none; border: 1px dashed #e0e0e0; border-radius: 8px; color: #888; cursor: pointer; font-size: 0.75rem; margin-top: 5px; transition: all 0.15s; }
+    .btn-more:hover { background: #fafafa; }
+
+    /* Modal */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 300; align-items: flex-end; justify-content: center; }
+    @media (min-width: 500px) { .modal-overlay { align-items: center; } }
+    .modal-overlay.show { display: flex; }
+    .modal { background: white; border-radius: 16px 16px 0 0; padding: 18px 14px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: 0 -4px 20px rgba(0,0,0,0.1); }
+    @media (min-width: 500px) { .modal { border-radius: 14px; width: 90%; max-width: 440px; max-height: 90vh; } }
+    .modal h3 { font-size: 0.9rem; font-weight: 600; margin-bottom: 12px; }
+    .modal .field { margin-bottom: 10px; }
+    .modal label { font-size: 0.7rem; color: #888; display: block; margin-bottom: 2px; }
+    .modal input, .modal select, .modal textarea { width: 100%; padding: 9px 10px; border: 1px solid #e5e5e5; border-radius: 8px; font-size: 0.8rem; font-family: inherit; background: #fafafa; transition: border 0.15s; }
+    .modal input:focus, .modal select:focus, .modal textarea:focus { outline: none; border-color: #e60000; background: white; }
+    .modal textarea { resize: vertical; min-height: 55px; }
+    .modal .btn-row { display: flex; gap: 6px; justify-content: flex-end; margin-top: 14px; flex-wrap: wrap; }
+    .btn-cancel { background: #f0f0f0; color: #333; border: none; padding: 9px 14px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
+    .btn-cancel:hover { background: #e0e0e0; }
+    .btn-save { background: #e60000; color: white; border: none; padding: 9px 14px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
+    .btn-save:hover { background: #c40000; }
+
+    /* Sélecteur d'accès (fiche) */
+    .access-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .access-chip { display: flex; align-items: center; gap: 4px; padding: 5px 8px; border-radius: 14px; border: 1px solid #e0e0e0; background: white; font-size: 0.7rem; cursor: pointer; transition: all 0.15s; }
+    .access-chip.selected { background: #e60000; color: white; border-color: #e60000; }
+    .access-chip.team-chip { font-weight: 500; }
+    .access-chip .chip-avatar { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.55rem; font-weight: 700; }
+    .access-chip.selected .chip-avatar { background: rgba(255,255,255,0.3); }
+    .access-chip:not(.selected) .chip-avatar { background: #e60000; color: white; }
+
+    .error-banner { background: #fff5f5; border: 1px solid #fcc; border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; color: #c00; font-size: 0.75rem; }
+
+    @media (min-width: 500px) {
+      header .account-info { display: block; }
+      header { padding: 12px 20px; }
+      header .brand img { height: 26px; }
+    }
+    @media (min-width: 700px) {
+      header .brand img { height: 28px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <img src="https://github.com/Lost-Cyrano/xiwangmu/blob/main/images/Xiwangmu.png?raw=true" alt="Xiwangmu">
+    <span>Xiwangmu CRF</span>
+  </div>
+  <div class="account-menu" id="accountMenu">
+    <div class="account-trigger" onclick="toggleAccountMenu()">
+      <div class="account-info">
+        <div class="account-name" id="headerName">--</div>
+        <div class="account-role" id="headerRole">--</div>
+      </div>
+      <div class="account-avatar" id="headerAvatar">--</div>
+      <span class="account-chevron">▼</span>
+    </div>
+    <div class="account-dropdown" id="accountDropdown">
+      <div class="dropdown-section">
+        <div class="dropdown-label">Mon identité</div>
+        <div class="dropdown-user me">
+          <div class="avatar-sm" id="dropdownAvatar">--</div>
+          <div class="info">
+            <div class="name" id="dropdownName">--</div>
+            <div class="role" id="dropdownRole">--</div>
+          </div>
+        </div>
+      </div>
+      <div class="dropdown-section">
+        <div class="dropdown-label">Mon équipe</div>
+        <div id="teamMembersList"><div style="color:#bbb;font-size:0.8rem;">Chargement...</div></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <div class="card-header">
+      <h2>Fiches d'Intervention</h2>
+      <button class="btn-add" onclick="openFicheModal()" title="Nouvelle prise en charge">+</button>
+    </div>
+    <div id="fiches-list"><div class="empty-state">Chargement...</div></div>
+    <button class="btn-more" id="btn-more-fiches" style="display:none;" onclick="showMoreFiches()">Afficher plus</button>
+  </div>
+</main>
+
+<!-- Modal création fiche -->
+<div class="modal-overlay" id="ficheModal">
+  <div class="modal">
+    <h3>Nouvelle prise en charge</h3>
+    <div class="field">
+      <label>Nom de la victime</label>
+      <input type="text" id="fiche-victime-nom" placeholder="Laisser vide = Anonyme ###">
+    </div>
+    <div class="field">
+      <label>Origine</label>
+      <select id="fiche-origine" onchange="toggleOrigineAutre()">
+        <option value="">--</option>
+        <option value="Orga">Orga</option>
+        <option value="Public">Public</option>
+        <option value="Autre">Autre</option>
+      </select>
+      <input type="text" id="fiche-origine-autre" placeholder="Précisez..." style="display:none;margin-top:5px;">
+    </div>
+    <div class="field">
+      <label>Type de soins</label>
+      <select id="fiche-type" onchange="toggleTypeAutre()">
+        <option value="">--</option>
+        <option value="Petit soin">Petit soin</option>
+        <option value="Traumatisme">Traumatisme</option>
+        <option value="Malaise/maladie">Malaise/maladie</option>
+        <option value="Inconscient">Inconscient</option>
+        <option value="Arrêt Cardiaque">Arrêt Cardiaque</option>
+        <option value="Autre">Autre</option>
+      </select>
+      <input type="text" id="fiche-type-autre" placeholder="Précisez..." style="display:none;margin-top:5px;">
+    </div>
+    <div class="field">
+      <label>Accès à la fiche</label>
+      <div class="access-list" id="access-list">
+        <div class="access-chip team-chip selected" data-nivol="__TEAM__" onclick="toggleAccess(this)">
+          <span class="chip-avatar">T</span> Toute l'équipe
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="closeFicheModal()">Annuler</button>
+      <button class="btn-save" onclick="confirmCreateFiche()">Créer</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAigiFFGONooT17W11gnABs1aHKN0O3N9s",
+    authDomain: "xiwangmu-crf.firebaseapp.com",
+    projectId: "xiwangmu-crf",
+    storageBucket: "xiwangmu-crf.firebasestorage.app",
+    messagingSenderId: "990701485221",
+    appId: "1:990701485221:web:efa9e1842c07af4fd1a14c",
+    measurementId: "G-J9TZ23YECY"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  let CURRENT_NIVOL = null;
+  let currentEquipeId = null;
+  let teamMembers = [];
+  let allFiches = [];
+  let visibleFichesCount = 5;
+  let anonymeCounter = 0;
+  let selectedAccess = ['__TEAM__'];
+
+  // Couleurs par type de soins
+  const TYPE_COLORS = {
+    'Petit soin':        '#78909c',
+    'Traumatisme':       '#e60000',
+    'Malaise/maladie':   '#f9a825',
+    'Inconscient':       '#6a1b9a',
+    'Arrêt Cardiaque':   '#212121',
+    'Autre':             '#546e7a',
+    'default':           '#c4c4c4'
+  };
+
+  function getTypeColor(type) {
+    return TYPE_COLORS[type] || TYPE_COLORS['default'];
+  }
+
+  // Vérification de l'authentification
+  onAuthStateChanged(auth, async (user) => {
+    if (!user || !user.displayName) {
+      window.location.href = './login.html?redirect=' + encodeURIComponent(window.location.href);
+      return;
+    }
+
+    CURRENT_NIVOL = user.displayName;
+
+    // Vérifier que le NIVOL existe dans la base
+    try {
+      const userSnap = await getDoc(doc(db, 'U', CURRENT_NIVOL));
+      if (!userSnap.exists()) {
+        window.location.href = './login.html?redirect=' + encodeURIComponent(window.location.href);
+        return;
+      }
+    } catch (e) {
+      window.location.href = './login.html?redirect=' + encodeURIComponent(window.location.href);
+      return;
+    }
+
+    await init();
+  });
+
+  async function init() {
+    try {
+      const userSnap = await getDoc(doc(db, 'U', CURRENT_NIVOL));
+      const data = userSnap.data();
+      const nom = data.I || 'Inconnu';
+      const fonction = data.F || '?';
+      currentEquipeId = data.E || null;
+
+      setHeader(nom, fonction);
+      setDropdownIdentity(nom, fonction);
+
+      if (currentEquipeId) {
+        const teamSnap = await getDoc(doc(db, 'T', currentEquipeId));
+        const teamName = teamSnap.exists() ? teamSnap.data().N : currentEquipeId;
+
+        await loadTeam(currentEquipeId);
+
+        // Compter les anonymes existants (sur toutes les fiches de l'équipe)
+        const allEquipeFiches = await getDocs(query(collection(db, 'I'), where('equipe', '==', currentEquipeId)));
+        allEquipeFiches.forEach(d => {
+          const vnom = d.data().victimeNom || '';
+          const match = vnom.match(/^Anonyme (\d{3})$/);
+          if (match) { const num = parseInt(match[1]); if (num >= anonymeCounter) anonymeCounter = num + 1; }
+        });
+
+        await loadFiches(currentEquipeId);
+      } else {
+        document.getElementById('teamMembersList').innerHTML = '<div style="color:#bbb;font-size:0.8rem;">Aucune équipe</div>';
+        document.getElementById('fiches-list').innerHTML = '<div class="error-banner">Non rattaché à une équipe.</div>';
+      }
+    } catch (e) {
+      console.error(e);
+      document.getElementById('fiches-list').innerHTML = `<div class="error-banner">Erreur: ${e.message}</div>`;
+    }
+  }
+
+  function setHeader(nom, fonction) {
+    document.getElementById('headerName').textContent = nom;
+    document.getElementById('headerRole').textContent = fonction;
+    document.getElementById('headerAvatar').textContent = getInitials(nom);
+  }
+  function setDropdownIdentity(nom, fonction) {
+    document.getElementById('dropdownName').textContent = nom;
+    document.getElementById('dropdownRole').textContent = fonction;
+    document.getElementById('dropdownAvatar').textContent = getInitials(nom);
+  }
+  function getInitials(nom) {
+    if (!nom || nom === 'Inconnu') return '?';
+    const parts = nom.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return nom.substring(0, 2).toUpperCase();
+  }
+
+  async function loadTeam(equipeId) {
+    const container = document.getElementById('teamMembersList');
+    try {
+      const teamSnap = await getDoc(doc(db, 'T', equipeId));
+      const teamName = teamSnap.exists() ? teamSnap.data().N : equipeId;
+      const q = query(collection(db, 'U'), where('E', '==', equipeId));
+      const snap = await getDocs(q);
+      
+      teamMembers = [];
+      snap.forEach(d => teamMembers.push({ nivol: d.id, nom: d.data().I || '?', fonction: d.data().F || '?' }));
+
+      let html = `<div style="font-size:0.7rem;color:#888;margin-bottom:4px;">${teamName}</div>`;
+      if (snap.empty) {
+        html += '<div style="color:#bbb;font-size:0.8rem;">Aucun membre</div>';
+      } else {
+        snap.forEach(d => {
+          const m = d.data(); const isMe = d.id === CURRENT_NIVOL;
+          html += `<div class="dropdown-user${isMe?' me':''}"><div class="avatar-sm">${getInitials(m.I||'?')}</div><div class="info"><div class="name">${m.I||'?'}${isMe?' (moi)':''}</div><div class="role">${m.F||'?'}</div></div></div>`;
+        });
+      }
+      container.innerHTML = html;
+    } catch (e) { container.innerHTML = '<div style="color:#c00;font-size:0.8rem;">Erreur</div>'; }
+  }
+
+  function buildAccessList() {
+    const container = document.getElementById('access-list');
+    let html = `<div class="access-chip team-chip ${selectedAccess.includes('__TEAM__') ? 'selected' : ''}" data-nivol="__TEAM__" onclick="toggleAccess(this)">
+      <span class="chip-avatar">T</span> Toute l'équipe
+    </div>`;
+    
+    teamMembers.forEach(m => {
+      const isSelected = selectedAccess.includes(m.nivol);
+      html += `<div class="access-chip ${isSelected ? 'selected' : ''}" data-nivol="${m.nivol}" onclick="toggleAccess(this)">
+        <span class="chip-avatar">${getInitials(m.nom)}</span> ${m.nom}
+      </div>`;
+    });
+    container.innerHTML = html;
+  }
+
+  window.toggleAccess = function(chip) {
+    const nivol = chip.dataset.nivol;
+    
+    if (nivol === '__TEAM__') {
+      if (selectedAccess.includes('__TEAM__')) {
+        selectedAccess = [];
+      } else {
+        selectedAccess = ['__TEAM__'];
+      }
+    } else {
+      if (selectedAccess.includes(nivol)) {
+        selectedAccess = selectedAccess.filter(n => n !== nivol);
+      } else {
+        selectedAccess = selectedAccess.filter(n => n !== '__TEAM__');
+        selectedAccess.push(nivol);
+      }
+      if (selectedAccess.length === teamMembers.length && teamMembers.length > 0) {
+        selectedAccess = ['__TEAM__'];
+      }
+      if (selectedAccess.length === 0) {
+        selectedAccess = ['__TEAM__'];
+      }
+    }
+    buildAccessList();
+  };
+
+  // ========== FICHES (filtrées par accès) ==========
+  async function loadFiches(equipeId) {
+    const container = document.getElementById('fiches-list');
+    try {
+      const q = query(collection(db, 'I'), where('equipe', '==', equipeId));
+      const snap = await getDocs(q);
+      
+      allFiches = [];
+      snap.forEach(d => {
+        const fiche = { id: d.id, ...d.data() };
+        // Filtrer : n'afficher que les fiches auxquelles l'utilisateur a accès
+        if (hasAccess(fiche)) {
+          allFiches.push(fiche);
+        }
+      });
+
+      allFiches.sort((a, b) => {
+        const da = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+        const db2 = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+        return db2 - da;
+      });
+      
+      visibleFichesCount = 5;
+      renderFiches();
+    } catch (e) { 
+      container.innerHTML = `<div class="error-banner">Erreur: ${e.message}</div>`; 
+    }
+  }
+
+  function hasAccess(fiche) {
+    const access = fiche.access;
+    // Si pas d'access défini ou si c'est __TEAM__, tout le monde a accès
+    if (!access || access.length === 0 || access.includes('__TEAM__')) return true;
+    // Sinon, vérifier si le NIVOL actuel est dans la liste
+    return access.includes(CURRENT_NIVOL);
+  }
+
+  function getAccessLabel(accessList) {
+    if (!accessList || accessList.length === 0 || accessList.includes('__TEAM__')) return 'T';
+    if (accessList.length === 1) {
+      const m = teamMembers.find(tm => tm.nivol === accessList[0]);
+      return m ? getInitials(m.nom) : '?';
+    }
+    const m = teamMembers.find(tm => tm.nivol === accessList[0]);
+    return m ? getInitials(m.nom) : String(accessList.length);
+  }
+
+  function renderFiches() {
+    const container = document.getElementById('fiches-list');
+    const btnMore = document.getElementById('btn-more-fiches');
+    
+    if (allFiches.length === 0) { 
+      container.innerHTML = '<div class="empty-state">Aucune prise en charge pour l\'instant</div>'; 
+      btnMore.style.display = 'none'; 
+      return; 
+    }
+    
+    const visible = allFiches.slice(0, visibleFichesCount);
+    let html = '';
+    visible.forEach(f => {
+      let dateStr = '';
+      if (f.createdAt) { 
+        const d = f.createdAt.toDate ? f.createdAt.toDate() : new Date(f.createdAt); 
+        if (!isNaN(d.getTime())) {
+          dateStr = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); 
+        }
+      }
+      const victime = f.victimeNom || 'Sans nom';
+      const accessLabel = getAccessLabel(f.access);
+      const typeColor = getTypeColor(f.typeSoins);
+      
+      html += `<div class="fiche-item" onclick="openIntervention('${f.id}')">
+        <div class="fiche-info">
+          <div class="fiche-avatar" style="background:${typeColor};" title="${f.typeSoins || 'Type inconnu'}">${accessLabel}</div>
+          <div class="fiche-text">
+            <div class="fiche-name">${victime}</div>
+            ${f.victimeAge ? `<div class="fiche-age">${f.victimeAge} an${f.victimeAge > 1 ? 's' : ''}</div>` : ''}
+          </div>
+        </div>
+        <div class="fiche-date">${dateStr}</div>
+        <span style="color:#ccc;flex-shrink:0;">→</span>
+      </div>`;
+    });
+    container.innerHTML = html;
+    
+    btnMore.style.display = allFiches.length > visibleFichesCount ? 'block' : 'none';
+    if (allFiches.length > visibleFichesCount) {
+      btnMore.textContent = `+ ${allFiches.length - visibleFichesCount} autre${allFiches.length - visibleFichesCount > 1 ? 's' : ''}`;
+    }
+  }
+
+  window.showMoreFiches = function() { 
+    visibleFichesCount = Math.min(visibleFichesCount + 5, allFiches.length); 
+    renderFiches(); 
+  };
+
+  // ========== FICHE MODAL ==========
+  window.openFicheModal = function() {
+    if (!currentEquipeId) { alert('Pas d\'équipe.'); return; }
+    document.getElementById('fiche-victime-nom').value = '';
+    document.getElementById('fiche-origine').value = '';
+    document.getElementById('fiche-origine-autre').value = '';
+    document.getElementById('fiche-origine-autre').style.display = 'none';
+    document.getElementById('fiche-type').value = '';
+    document.getElementById('fiche-type-autre').value = '';
+    document.getElementById('fiche-type-autre').style.display = 'none';
+    selectedAccess = ['__TEAM__'];
+    buildAccessList();
+    document.getElementById('ficheModal').classList.add('show');
+  };
+
+  window.closeFicheModal = function() { 
+    document.getElementById('ficheModal').classList.remove('show'); 
+  };
+
+  window.toggleOrigineAutre = function() {
+    const sel = document.getElementById('fiche-origine');
+    const autre = document.getElementById('fiche-origine-autre');
+    autre.style.display = sel.value === 'Autre' ? 'block' : 'none';
+    if (sel.value !== 'Autre') autre.value = '';
+  };
+
+  window.toggleTypeAutre = function() {
+    const sel = document.getElementById('fiche-type');
+    const autre = document.getElementById('fiche-type-autre');
+    autre.style.display = sel.value === 'Autre' ? 'block' : 'none';
+    if (sel.value !== 'Autre') autre.value = '';
+  };
+
+  window.confirmCreateFiche = async function() {
+    let victimeNom = document.getElementById('fiche-victime-nom').value.trim();
+    if (!victimeNom) { 
+      anonymeCounter++; 
+      victimeNom = `Anonyme ${String(anonymeCounter).padStart(3, '0')}`; 
+    }
+    
+    let origine = document.getElementById('fiche-origine').value;
+    if (origine === 'Autre') origine = document.getElementById('fiche-origine-autre').value.trim() || 'Autre';
+    
+    let typeSoins = document.getElementById('fiche-type').value;
+    if (typeSoins === 'Autre') typeSoins = document.getElementById('fiche-type-autre').value.trim() || 'Autre';
+
+    const now = new Date();
+    const heureArrivee = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const id = `I-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}-${Math.random().toString(36).substring(2,6).toUpperCase()}`;
+    const mcId = `MC-${id}`;
+
+    try {
+      // Créer la fiche d'intervention
+      await setDoc(doc(db, 'I', id), {
+        equipe: currentEquipeId,
+        createdAt: serverTimestamp(),
+        victimeNom: victimeNom,
+        victimeAge: null,
+        origine: origine || null,
+        typeSoins: typeSoins || null,
+        mcId: mcId,
+        access: selectedAccess,
+      });
+
+      // Créer l'entrée dans la main courante
+      await setDoc(doc(db, 'M', mcId), {
+        equipe: currentEquipeId,
+        heureArrivee: heureArrivee,
+        heureDepart: null,
+        origine: origine || null,
+        destinataire: teamMembers.length > 0 ? 'Équipe' : '',
+        victime: victimeNom,
+        type: typeSoins || null,
+        suite: null,
+        description: `N° de fiche d'intervention ${id} | `,
+        ficheId: id,
+        autoGenerated: true,
+      });
+
+      closeFicheModal();
+      window.location.href = `./intervention?id=${id}`;
+    } catch (e) { 
+      alert('Erreur: ' + e.message); 
+    }
+  };
+
+  window.openIntervention = function(id) { 
+    window.location.href = `./intervention?id=${id}`; 
+  };
+
+  // ========== MENU COMPTE ==========
+  window.toggleAccountMenu = function() {
+    const menu = document.getElementById('accountMenu');
+    const dropdown = document.getElementById('accountDropdown');
+    menu.classList.toggle('open');
+    dropdown.classList.toggle('show');
+  };
+
+  document.addEventListener('click', function(e) {
+    const menu = document.getElementById('accountMenu');
+    if (!menu.contains(e.target)) { 
+      menu.classList.remove('open'); 
+      document.getElementById('accountDropdown').classList.remove('show'); 
+    }
+  });
+  document.getElementById('ficheModal').addEventListener('click', function(e) { 
+    if (e.target === this) closeFicheModal(); 
+  });
+</script>
+</body>
+</html>
