@@ -24,6 +24,7 @@
 
     .progress { margin-top: 16px; font-size: 0.8rem; color: #888; }
     .error { color: #c00; font-size: 0.8rem; margin-top: 10px; }
+    .success { color: #0a0; font-size: 0.8rem; margin-top: 4px; }
 
     @media (max-width: 400px) {
       .container { padding: 20px 16px; }
@@ -34,12 +35,14 @@
   <div class="container">
     <img src="https://github.com/Lost-Cyrano/xiwangmu/blob/main/images/Xiwangmu.png?raw=true" alt="Xiwangmu">
     <h1>Télécharger les documents</h1>
-    <p>Générez et téléchargez la main courante au format PDF.</p>
+    <p>Générez et téléchargez les documents au format PDF.</p>
     
-    <button id="btn-generate" onclick="generatePDF()">📥 Télécharger la main courante</button>
+    <button id="btn-mc" onclick="generateMainCourante()">📋 Télécharger la main courante</button>
+    <button id="btn-rm" onclick="generateRapportMission()">📊 Télécharger le rapport de mission</button>
     <button class="btn-back" onclick="window.location.href='./ci.html'">← Retour</button>
     
     <div class="progress" id="progress"></div>
+    <p class="success" id="success"></p>
     <p class="error" id="error"></p>
   </div>
 
@@ -80,37 +83,67 @@
       return await response.arrayBuffer();
     }
 
-    window.generatePDF = async function() {
-      const btn = document.getElementById('btn-generate');
+    // ========== DONNÉES PARTAGÉES ==========
+    async function loadAllData() {
+      const mcSnap = await getDocs(collection(db, 'M'));
+      const allEntries = [];
+      mcSnap.forEach(d => allEntries.push({ id: d.id, ...d.data() }));
+      allEntries.sort((a, b) => (a.heureArrivee || '').localeCompare(b.heureArrivee || ''));
+
+      const fichesSnap = await getDocs(collection(db, 'I'));
+      const allFiches = [];
+      fichesSnap.forEach(d => allFiches.push({ id: d.id, ...d.data() }));
+
+      return { allEntries, allFiches };
+    }
+
+    function computeStats(allFiches) {
+      let totalSoins = allFiches.length;
+      let totalDecharge = 0, totalEvacCRF = 0, totalEvacAutre = 0, totalDAE = 0;
+      let ctTrauma = 0, ctPetitSoin = 0, ctMalaise = 0, ctInconscient = 0, ctACR = 0;
+
+      allFiches.forEach(f => {
+        const t = f.typeSoins || '';
+        if (t === 'Traumatisme') ctTrauma++;
+        else if (t === 'Petit soin') ctPetitSoin++;
+        else if (t === 'Malaise/maladie') ctMalaise++;
+        else if (t === 'Inconscient') ctInconscient++;
+        else if (t === 'Arrêt Cardiaque') ctACR++;
+        if (f.decharge === true) totalDecharge++;
+        if (f.evacuationType === 'CRF') totalEvacCRF++;
+        else if (f.evacuationType && f.evacuationType !== 'CRF') totalEvacAutre++;
+        if (f.dae === true) totalDAE++;
+      });
+
+      const total = totalSoins + totalDecharge;
+
+      return { totalSoins, totalDecharge, totalEvacCRF, totalEvacAutre, totalDAE, ctTrauma, ctPetitSoin, ctMalaise, ctInconscient, ctACR, total };
+    }
+
+    // ========== MAIN COURANTE ==========
+    window.generateMainCourante = async function() {
+      const btn = document.getElementById('btn-mc');
       const progressEl = document.getElementById('progress');
       const errorEl = document.getElementById('error');
+      const successEl = document.getElementById('success');
 
       btn.disabled = true;
-      btn.textContent = 'Génération en cours...';
+      btn.textContent = 'Génération...';
       progressEl.textContent = '';
       errorEl.textContent = '';
+      successEl.textContent = '';
 
       try {
         const { PDFDocument } = window.PDFLib;
         if (!PDFDocument) throw new Error('PDFLib non chargé.');
 
-        // Récupérer les données
         progressEl.textContent = 'Récupération des données...';
-        
-        const mcSnap = await getDocs(collection(db, 'M'));
-        const allEntries = [];
-        mcSnap.forEach(d => allEntries.push({ id: d.id, ...d.data() }));
-        allEntries.sort((a, b) => (a.heureArrivee || '').localeCompare(b.heureArrivee || ''));
-
-        const fichesSnap = await getDocs(collection(db, 'I'));
-        const allFiches = [];
-        fichesSnap.forEach(d => allFiches.push({ id: d.id, ...d.data() }));
+        const { allEntries, allFiches } = await loadAllData();
+        const stats = computeStats(allFiches);
 
         const LINES_PER_PAGE = 15;
         const totalMCPages = Math.max(1, Math.ceil(allEntries.length / LINES_PER_PAGE));
         const n2Value = totalMCPages;
-
-        progressEl.textContent = `${allEntries.length} entrées → ${totalMCPages} page(s) MC + 1 page stats`;
 
         // Charger les templates
         progressEl.textContent = 'Chargement des templates...';
@@ -118,143 +151,149 @@
         const statsTemplateBytes = await fetchPDF('./documents/Main courante-page4-FORM.pdf');
         const autreDocBytes = await fetchPDF('./documents/Main courante_Autre.pdf');
 
-        // Charger le document "Autre" pour récupérer ses pages
         const autreDoc = await PDFDocument.load(autreDocBytes);
-        const autrePages = autreDoc.getPages();
-        
-        if (autrePages.length < 3) {
-          throw new Error('Le document Main courante_Autre.pdf doit contenir au moins 3 pages.');
-        }
+        if (autreDoc.getPages().length < 3) throw new Error('Main courante_Autre.pdf doit avoir au moins 3 pages.');
 
-        // Pages 1 et 2 de "Autre" → à mettre au début
-        // Page 3 de "Autre" → à mettre à la fin
-        const autrePage1 = autrePages[0]; // page 1
-        const autrePage2 = autrePages[1]; // page 2
-        const autrePage3 = autrePages[2]; // page 3 (sera la dernière)
-
-        // Créer le document final
         const finalDoc = await PDFDocument.create();
 
-        // === INSÉRER PAGE 1 DE "AUTRE" ===
-        const [copiedAutrePage1] = await finalDoc.copyPages(autreDoc, [0]);
-        finalDoc.addPage(copiedAutrePage1);
+        // Pages 1 et 2 de "Autre"
+        const [ap1] = await finalDoc.copyPages(autreDoc, [0]); finalDoc.addPage(ap1);
+        const [ap2] = await finalDoc.copyPages(autreDoc, [1]); finalDoc.addPage(ap2);
 
-        // === INSÉRER PAGE 2 DE "AUTRE" ===
-        const [copiedAutrePage2] = await finalDoc.copyPages(autreDoc, [1]);
-        finalDoc.addPage(copiedAutrePage2);
-
-        // === PAGES MAIN COURANTE ===
+        // Pages main courante
         for (let p = 0; p < totalMCPages; p++) {
           progressEl.textContent = `Page MC ${p + 1}/${totalMCPages}...`;
-          
           const pageDoc = await PDFDocument.load(mcTemplateBytes);
           const form = pageDoc.getForm();
+          const start = p * LINES_PER_PAGE;
+          const pageEntries = allEntries.slice(start, start + LINES_PER_PAGE);
 
-          const startIndex = p * LINES_PER_PAGE;
-          const pageEntries = allEntries.slice(startIndex, startIndex + LINES_PER_PAGE);
-
-          // Remplir les champs
           for (let i = 0; i < LINES_PER_PAGE; i++) {
-            const lineNum = i + 1;
-            const entry = pageEntries[i] || null;
-
-            form.getTextField(`A${lineNum}`).setText(entry ? (entry.heureArrivee || '') : '');
-            form.getTextField(`O${lineNum}`).setText(entry ? (entry.origine || '') : '');
-            form.getTextField(`D${lineNum}`).setText(entry ? (entry.destinataire || '') : '');
-            form.getTextField(`E${lineNum}`).setText(entry ? (entry.description || '') : '');
-            form.getTextField(`T${lineNum}`).setText(entry ? (entry.type || '') : '');
-            form.getTextField(`S${lineNum}`).setText(entry ? (entry.suite || '') : '');
-            form.getTextField(`F${lineNum}`).setText(entry ? (entry.heureDepart || '') : '');
+            const ln = i + 1;
+            const e = pageEntries[i] || null;
+            form.getTextField(`A${ln}`).setText(e ? (e.heureArrivee || '') : '');
+            form.getTextField(`O${ln}`).setText(e ? (e.origine || '') : '');
+            form.getTextField(`D${ln}`).setText(e ? (e.destinataire || '') : '');
+            form.getTextField(`E${ln}`).setText(e ? (e.description || '') : '');
+            form.getTextField(`T${ln}`).setText(e ? (e.type || '') : '');
+            form.getTextField(`S${ln}`).setText(e ? (e.suite || '') : '');
+            form.getTextField(`F${ln}`).setText(e ? (e.heureDepart || '') : '');
           }
 
-          // Date, N1, N2
           const today = new Date();
-          const dateStr = today.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-          try { form.getTextField('Date').setText(dateStr); } catch (e) {}
+          try { form.getTextField('Date').setText(today.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })); } catch (e) {}
           try { form.getTextField('N1').setText(String(p + 1)); } catch (e) {}
           try { form.getTextField('N2').setText(String(n2Value)); } catch (e) {}
 
-          // Aplatir le formulaire
           form.flatten();
-
-          // Copier dans le document final
-          const [filledPage] = await finalDoc.copyPages(pageDoc, [0]);
-          finalDoc.addPage(filledPage);
+          const [fp] = await finalDoc.copyPages(pageDoc, [0]); finalDoc.addPage(fp);
         }
 
-        // === PAGE STATS ===
+        // Page stats
         progressEl.textContent = 'Statistiques...';
         const statsDoc = await PDFDocument.load(statsTemplateBytes);
-        const statsForm = statsDoc.getForm();
+        const sf = statsDoc.getForm();
+        fillStatsForm(sf, stats, n2Value);
+        sf.flatten();
+        const [sp] = await finalDoc.copyPages(statsDoc, [0]); finalDoc.addPage(sp);
 
-        let totalSoins = allFiches.length;
-        let totalDecharge = 0, totalEvacCRF = 0, totalEvacAutre = 0, totalDAE = 0;
-        let ctTrauma = 0, ctPetitSoin = 0, ctMalaise = 0, ctInconscient = 0, ctACR = 0;
+        // Page 3 de "Autre"
+        const [ap3] = await finalDoc.copyPages(autreDoc, [2]); finalDoc.addPage(ap3);
 
-        allFiches.forEach(f => {
-          const t = f.typeSoins || '';
-          if (t === 'Traumatisme') ctTrauma++;
-          else if (t === 'Petit soin') ctPetitSoin++;
-          else if (t === 'Malaise/maladie') ctMalaise++;
-          else if (t === 'Inconscient') ctInconscient++;
-          else if (t === 'Arrêt Cardiaque') ctACR++;
-          if (f.decharge === true) totalDecharge++;
-          if (f.evacuationType === 'CRF') totalEvacCRF++;
-          else if (f.evacuationType && f.evacuationType !== 'CRF') totalEvacAutre++;
-          if (f.dae === true) totalDAE++;
-        });
-
-        const total = totalSoins + totalDecharge;
-
-        try { statsForm.getTextField('NombreDePage3').setText(String(n2Value)); } catch (e) {}
-        try { statsForm.getTextField('Total').setText(String(total)); } catch (e) {}
-        try { statsForm.getTextField('Soins').setText(String(totalSoins)); } catch (e) {}
-        try { statsForm.getTextField('Traumatismes').setText(String(ctTrauma)); } catch (e) {}
-        try { statsForm.getTextField('Petits_Soins').setText(String(ctPetitSoin)); } catch (e) {}
-        try { statsForm.getTextField('MalaisesEtMaladies').setText(String(ctMalaise)); } catch (e) {}
-        try { statsForm.getTextField('Inconscients').setText(String(ctInconscient)); } catch (e) {}
-        try { statsForm.getTextField('ACR').setText(String(ctACR)); } catch (e) {}
-        try { statsForm.getTextField('DAE').setText(String(totalDAE)); } catch (e) {}
-        try { statsForm.getTextField('Decharge').setText(String(totalDecharge)); } catch (e) {}
-        try { statsForm.getTextField('EvacuationCRF').setText(String(totalEvacCRF)); } catch (e) {}
-        try { statsForm.getTextField('EvacuationAutre').setText(String(totalEvacAutre)); } catch (e) {}
-
-        // Aplatir
-        statsForm.flatten();
-
-        const [statsPage] = await finalDoc.copyPages(statsDoc, [0]);
-        finalDoc.addPage(statsPage);
-
-        // === INSÉRER PAGE 3 DE "AUTRE" EN DERNIÈRE PAGE ===
-        const [copiedAutrePage3] = await finalDoc.copyPages(autreDoc, [2]);
-        finalDoc.addPage(copiedAutrePage3);
-
-        // Sauvegarder et télécharger
+        // Télécharger
         progressEl.textContent = 'Finalisation...';
-        const pdfBytes = await finalDoc.save();
-        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        const now = new Date();
-        a.download = `main-courante-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        await downloadPDF(finalDoc, 'main-courante');
 
-        progressEl.textContent = '✅ Téléchargement terminé !';
-        btn.textContent = '📥 Télécharger la main courante';
+        successEl.textContent = '✅ Main courante téléchargée !';
+        progressEl.textContent = '';
+        btn.textContent = '📋 Télécharger la main courante';
         btn.disabled = false;
 
       } catch (e) {
-        console.error('Erreur:', e);
+        console.error(e);
         errorEl.textContent = 'Erreur: ' + e.message;
-        btn.textContent = '📥 Télécharger la main courante';
+        btn.textContent = '📋 Télécharger la main courante';
         btn.disabled = false;
         progressEl.textContent = '';
       }
     };
+
+    // ========== RAPPORT DE MISSION ==========
+    window.generateRapportMission = async function() {
+      const btn = document.getElementById('btn-rm');
+      const progressEl = document.getElementById('progress');
+      const errorEl = document.getElementById('error');
+      const successEl = document.getElementById('success');
+
+      btn.disabled = true;
+      btn.textContent = 'Génération...';
+      progressEl.textContent = '';
+      errorEl.textContent = '';
+      successEl.textContent = '';
+
+      try {
+        const { PDFDocument } = window.PDFLib;
+        if (!PDFDocument) throw new Error('PDFLib non chargé.');
+
+        progressEl.textContent = 'Récupération des données...';
+        const { allFiches } = await loadAllData();
+        const stats = computeStats(allFiches);
+
+        progressEl.textContent = 'Chargement du template...';
+        const rmTemplateBytes = await fetchPDF('./documents/Rapport_Mission_FORM.pdf');
+        const rmDoc = await PDFDocument.load(rmTemplateBytes);
+        const rmForm = rmDoc.getForm();
+
+        fillStatsForm(rmForm, stats, null);
+        rmForm.flatten();
+
+        progressEl.textContent = 'Finalisation...';
+        await downloadPDF(rmDoc, 'rapport-mission');
+
+        successEl.textContent = '✅ Rapport de mission téléchargé !';
+        progressEl.textContent = '';
+        btn.textContent = '📊 Télécharger le rapport de mission';
+        btn.disabled = false;
+
+      } catch (e) {
+        console.error(e);
+        errorEl.textContent = 'Erreur: ' + e.message;
+        btn.textContent = '📊 Télécharger le rapport de mission';
+        btn.disabled = false;
+        progressEl.textContent = '';
+      }
+    };
+
+    // ========== FONCTIONS UTILITAIRES ==========
+    function fillStatsForm(form, stats, n2Value) {
+      try { if (n2Value !== null) form.getTextField('NombreDePage3').setText(String(n2Value)); } catch (e) {}
+      try { form.getTextField('Total').setText(String(stats.total)); } catch (e) {}
+      try { form.getTextField('Soins').setText(String(stats.totalSoins)); } catch (e) {}
+      try { form.getTextField('Traumatismes').setText(String(stats.ctTrauma)); } catch (e) {}
+      try { form.getTextField('Tromatismes').setText(String(stats.ctTrauma)); } catch (e) {}
+      try { form.getTextField('Petits_Soins').setText(String(stats.ctPetitSoin)); } catch (e) {}
+      try { form.getTextField('MalaisesEtMaladies').setText(String(stats.ctMalaise)); } catch (e) {}
+      try { form.getTextField('Inconscients').setText(String(stats.ctInconscient)); } catch (e) {}
+      try { form.getTextField('ACR').setText(String(stats.ctACR)); } catch (e) {}
+      try { form.getTextField('DAE').setText(String(stats.totalDAE)); } catch (e) {}
+      try { form.getTextField('Decharge').setText(String(stats.totalDecharge)); } catch (e) {}
+      try { form.getTextField('EvacuationCRF').setText(String(stats.totalEvacCRF)); } catch (e) {}
+      try { form.getTextField('EvacuationAutre').setText(String(stats.totalEvacAutre)); } catch (e) {}
+    }
+
+    async function downloadPDF(doc, prefix) {
+      const pdfBytes = await doc.save();
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const now = new Date();
+      a.download = `${prefix}-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
   </script>
 </body>
 </html>
