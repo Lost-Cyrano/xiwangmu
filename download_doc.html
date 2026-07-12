@@ -116,9 +116,32 @@
         progressEl.textContent = 'Chargement des templates...';
         const mcTemplateBytes = await fetchPDF('./documents/Main courante-page3-FORM.pdf');
         const statsTemplateBytes = await fetchPDF('./documents/Main courante-page4-FORM.pdf');
+        const autreDocBytes = await fetchPDF('./documents/Main courante_Autre.pdf');
+
+        // Charger le document "Autre" pour récupérer ses pages
+        const autreDoc = await PDFDocument.load(autreDocBytes);
+        const autrePages = autreDoc.getPages();
+        
+        if (autrePages.length < 3) {
+          throw new Error('Le document Main courante_Autre.pdf doit contenir au moins 3 pages.');
+        }
+
+        // Pages 1 et 2 de "Autre" → à mettre au début
+        // Page 3 de "Autre" → à mettre à la fin
+        const autrePage1 = autrePages[0]; // page 1
+        const autrePage2 = autrePages[1]; // page 2
+        const autrePage3 = autrePages[2]; // page 3 (sera la dernière)
 
         // Créer le document final
         const finalDoc = await PDFDocument.create();
+
+        // === INSÉRER PAGE 1 DE "AUTRE" ===
+        const [copiedAutrePage1] = await finalDoc.copyPages(autreDoc, [0]);
+        finalDoc.addPage(copiedAutrePage1);
+
+        // === INSÉRER PAGE 2 DE "AUTRE" ===
+        const [copiedAutrePage2] = await finalDoc.copyPages(autreDoc, [1]);
+        finalDoc.addPage(copiedAutrePage2);
 
         // === PAGES MAIN COURANTE ===
         for (let p = 0; p < totalMCPages; p++) {
@@ -151,7 +174,7 @@
           try { form.getTextField('N1').setText(String(p + 1)); } catch (e) {}
           try { form.getTextField('N2').setText(String(n2Value)); } catch (e) {}
 
-          // Aplatir le formulaire = contenu visible mais plus éditable
+          // Aplatir le formulaire
           form.flatten();
 
           // Copier dans le document final
@@ -196,11 +219,15 @@
         try { statsForm.getTextField('EvacuationCRF').setText(String(totalEvacCRF)); } catch (e) {}
         try { statsForm.getTextField('EvacuationAutre').setText(String(totalEvacAutre)); } catch (e) {}
 
-        // Aplatir le formulaire des stats
+        // Aplatir
         statsForm.flatten();
 
         const [statsPage] = await finalDoc.copyPages(statsDoc, [0]);
         finalDoc.addPage(statsPage);
+
+        // === INSÉRER PAGE 3 DE "AUTRE" EN DERNIÈRE PAGE ===
+        const [copiedAutrePage3] = await finalDoc.copyPages(autreDoc, [2]);
+        finalDoc.addPage(copiedAutrePage3);
 
         // Sauvegarder et télécharger
         progressEl.textContent = 'Finalisation...';
