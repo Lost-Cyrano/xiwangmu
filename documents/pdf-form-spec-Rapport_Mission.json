@@ -1,0 +1,291 @@
+{
+  "settings": {
+    "coordinateOrigin": "topLeft"
+  },
+  "fields": [
+    {
+      "id": "pdfFormField-0",
+      "page": 1,
+      "type": "text",
+      "name": "Total",
+      "rect": {
+        "x": 227.0696863099464,
+        "y": 279.2250804629542,
+        "w": 89.42384302588265,
+        "h": 18.331601719372127
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateRect",
+        "updateOrder",
+        "updateName"
+      ],
+      "order": 0
+    },
+    {
+      "id": "pdfFormField-5",
+      "page": 1,
+      "type": "text",
+      "name": "Soins",
+      "rect": {
+        "x": 227.07,
+        "y": 297.56,
+        "w": 89.42384302588265,
+        "h": 18.331601719372127
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateRect",
+        "updateOrder",
+        "updateName"
+      ],
+      "order": 1
+    },
+    {
+      "id": "pdfFormField-7",
+      "page": 1,
+      "type": "text",
+      "name": "Decharge",
+      "rect": {
+        "x": 227.07,
+        "y": 315.89,
+        "w": 89.42384302588265,
+        "h": 18.794285517042052
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateRect",
+        "updateOrder",
+        "updateName"
+      ],
+      "order": 2
+    },
+    {
+      "id": "pdfFormField-9",
+      "page": 1,
+      "type": "text",
+      "name": "DAE",
+      "rect": {
+        "x": 227.07,
+        "y": 334.68,
+        "w": 89.42384302588265,
+        "h": 18.794285517042052
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateRect",
+        "updateName",
+        "updateOrder"
+      ],
+      "order": 3
+    },
+    {
+      "id": "pdfFormField-8",
+      "page": 1,
+      "type": "text",
+      "name": "EvacuationCRF",
+      "rect": {
+        "x": 227.07,
+        "y": 353.47,
+        "w": 89.42384302588265,
+        "h": 18.794285517042052
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateRect",
+        "updateName",
+        "updateOrder"
+      ],
+      "order": 4
+    },
+    {
+      "id": "pdfFormField-10",
+      "page": 1,
+      "type": "text",
+      "name": "EvacuationAutre",
+      "rect": {
+        "x": 227.07,
+        "y": 372.26,
+        "w": 89.42384302588265,
+        "h": 18.794285517042052
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateRect",
+        "updateName",
+        "updateOrder"
+      ],
+      "order": 4
+    },
+    {
+      "id": "pdfFormField-11",
+      "page": 1,
+      "type": "text",
+      "name": "Petits_Soins",
+      "rect": {
+        "x": 446.8851101300678,
+        "y": 279.34230183132337,
+        "w": 91.84729715304101,
+        "h": 18.331601719372127
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateRect",
+        "updateOrder",
+        "updateName"
+      ],
+      "order": 0
+    },
+    {
+      "id": "pdfFormField-12",
+      "page": 1,
+      "type": "text",
+      "name": "MalaisesEtMaladies",
+      "rect": {
+        "x": 446.89,
+        "y": 297.76065085020446,
+        "w": 91.84729715304101,
+        "h": 18.533068385245837
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateRect",
+        "updateOrder",
+        "updateName"
+      ],
+      "order": 0
+    },
+    {
+      "id": "pdfFormField-13",
+      "page": 1,
+      "type": "text",
+      "name": "Tromatismes",
+      "rect": {
+        "x": 446.89,
+        "y": 316.2399818139845,
+        "w": 91.84729715304101,
+        "h": 19.01161990538766
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateRect",
+        "updateOrder",
+        "updateName"
+      ],
+      "order": 0
+    },
+    {
+      "id": "pdfFormField-18",
+      "page": 1,
+      "type": "text",
+      "name": "ACR",
+      "rect": {
+        "x": 446.89,
+        "y": 353.5115049675579,
+        "w": 91.84729715304101,
+        "h": 18.362036254991985
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateRect",
+        "updateOrder",
+        "updateName"
+      ],
+      "order": 0
+    },
+    {
+      "id": "pdfFormField-20",
+      "page": 1,
+      "type": "text",
+      "name": "Inconscients",
+      "rect": {
+        "x": 446.89,
+        "y": 335.0537806643695,
+        "w": 91.84729715304101,
+        "h": 18.023128105074882
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateRect",
+        "updateOrder",
+        "updateName"
+      ],
+      "order": 0
+    }
+  ],
+  "resources": {
+    "fonts": {
+      "Helvetica": {
+        "type": "standard",
+        "name": "Helvetica"
+      },
+      "Courier": {
+        "type": "standard",
+        "name": "Courier"
+      },
+      "Times": {
+        "type": "standard",
+        "name": "Times"
+      },
+      "ZapfDingbats": {
+        "type": "standard",
+        "name": "ZapfDingbats"
+      }
+    }
+  }
+}
