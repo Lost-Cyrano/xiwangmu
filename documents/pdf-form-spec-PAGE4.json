@@ -1,0 +1,387 @@
+{
+  "settings": {
+    "coordinateOrigin": "topLeft"
+  },
+  "fields": [
+    {
+      "id": "pdfFormField-0",
+      "page": 1,
+      "type": "text",
+      "name": "NombreDePage3",
+      "rect": {
+        "x": 403.9442229094329,
+        "y": 248.19462905695391,
+        "w": 44.10893735532408,
+        "h": 30
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateName",
+        "updateRect",
+        "updateDefaultValue",
+        "updateMaxLength",
+        "updateValue",
+        "updateTextAlign"
+      ],
+      "defaultValue": "",
+      "maxLength": null,
+      "value": "",
+      "textAlign": "center"
+    },
+    {
+      "id": "pdfFormField-1",
+      "page": 1,
+      "type": "text",
+      "name": "Total",
+      "rect": {
+        "x": 227.68544901781124,
+        "y": 296.4692096474728,
+        "w": 193.98258222415126,
+        "h": 30
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateName",
+        "updateRect",
+        "updateDefaultValue",
+        "updateMaxLength",
+        "updateValue",
+        "updateTextAlign"
+      ],
+      "defaultValue": "",
+      "maxLength": null,
+      "value": "",
+      "textAlign": "left"
+    },
+    {
+      "id": "pdfFormField-2",
+      "page": 1,
+      "type": "text",
+      "name": "Soins",
+      "rect": {
+        "x": 150.664872886124,
+        "y": 319.7956209410363,
+        "w": 270.12061461146476,
+        "h": 30
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateName",
+        "updateRect",
+        "updateDefaultValue",
+        "updateMaxLength",
+        "updateValue",
+        "updateTextAlign"
+      ],
+      "defaultValue": "",
+      "maxLength": null,
+      "value": "",
+      "textAlign": "left"
+    },
+    {
+      "id": "pdfFormField-3",
+      "page": 1,
+      "type": "text",
+      "name": "Traumatismes",
+      "rect": {
+        "x": 147.5543879002701,
+        "y": 366.96139071743164,
+        "w": 273.07742934992285,
+        "h": 30
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateName",
+        "updateRect",
+        "updateDefaultValue",
+        "updateMaxLength",
+        "updateValue",
+        "updateTextAlign"
+      ],
+      "defaultValue": "",
+      "maxLength": null,
+      "value": "",
+      "textAlign": "left"
+    },
+    {
+      "id": "pdfFormField-4",
+      "page": 1,
+      "type": "text",
+      "name": "Petits_Soins",
+      "rect": {
+        "x": 136.6926102752058,
+        "y": 344.826727822386,
+        "w": 284.35029347109696,
+        "h": 30
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateName",
+        "updateRect",
+        "updateDefaultValue",
+        "updateMaxLength",
+        "updateValue",
+        "updateTextAlign"
+      ],
+      "defaultValue": "",
+      "maxLength": null,
+      "value": "",
+      "textAlign": "left"
+    },
+    {
+      "id": "pdfFormField-5",
+      "page": 1,
+      "type": "text",
+      "name": "MalaisesEtMaladies",
+      "rect": {
+        "x": 174.02241220984442,
+        "y": 392.50542363924234,
+        "w": 247.02049153645837,
+        "h": 30
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateName",
+        "updateRect",
+        "updateDefaultValue",
+        "updateMaxLength",
+        "updateValue",
+        "updateTextAlign"
+      ],
+      "defaultValue": "",
+      "maxLength": null,
+      "value": "",
+      "textAlign": "left"
+    },
+    {
+      "id": "pdfFormField-6",
+      "page": 1,
+      "type": "text",
+      "name": "Inconscients",
+      "rect": {
+        "x": 138.2125075854392,
+        "y": 418.04945656105303,
+        "w": 282.6870878243152,
+        "h": 30
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateName",
+        "updateRect",
+        "updateDefaultValue",
+        "updateMaxLength",
+        "updateValue",
+        "updateTextAlign"
+      ],
+      "defaultValue": "",
+      "maxLength": null,
+      "value": "",
+      "textAlign": "left"
+    },
+    {
+      "id": "pdfFormField-7",
+      "page": 1,
+      "type": "text",
+      "name": "ACR",
+      "rect": {
+        "x": 555.420723821695,
+        "y": 320.04590054735684,
+        "w": 256.8148848419817,
+        "h": 30
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateName",
+        "updateRect",
+        "updateDefaultValue",
+        "updateMaxLength",
+        "updateValue",
+        "updateTextAlign"
+      ],
+      "defaultValue": "",
+      "maxLength": null,
+      "value": "",
+      "textAlign": "left"
+    },
+    {
+      "id": "pdfFormField-8",
+      "page": 1,
+      "type": "text",
+      "name": "DAE",
+      "rect": {
+        "x": 611.4569378134646,
+        "y": 343.37231184092036,
+        "w": 200.82016079121655,
+        "h": 30
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateName",
+        "updateRect",
+        "updateDefaultValue",
+        "updateMaxLength",
+        "updateValue",
+        "updateTextAlign"
+      ],
+      "defaultValue": "",
+      "maxLength": null,
+      "value": "",
+      "textAlign": "left"
+    },
+    {
+      "id": "pdfFormField-9",
+      "page": 1,
+      "type": "text",
+      "name": "Decharge",
+      "rect": {
+        "x": 548.8508388189623,
+        "y": 369.47076074419647,
+        "w": 264.5765393920396,
+        "h": 30
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateName",
+        "updateRect",
+        "updateDefaultValue",
+        "updateMaxLength",
+        "updateValue",
+        "updateTextAlign"
+      ],
+      "defaultValue": "",
+      "maxLength": null,
+      "value": "",
+      "textAlign": "left"
+    },
+    {
+      "id": "pdfFormField-10",
+      "page": 1,
+      "type": "text",
+      "name": "EvacuationCRF",
+      "rect": {
+        "x": 572.1772078149114,
+        "y": 393.9059828518836,
+        "w": 240.7371809092078,
+        "h": 30
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateName",
+        "updateRect",
+        "updateDefaultValue",
+        "updateMaxLength",
+        "updateValue",
+        "updateTextAlign"
+      ],
+      "defaultValue": "",
+      "maxLength": null,
+      "value": "",
+      "textAlign": "left"
+    },
+    {
+      "id": "pdfFormField-11",
+      "page": 1,
+      "type": "text",
+      "name": "EvacuationAutre",
+      "rect": {
+        "x": 720.798670086645,
+        "y": 418.8956209410361,
+        "w": 93.82030848122429,
+        "h": 30
+      },
+      "flags": {
+        "print": true
+      },
+      "style": {},
+      "additionalActions": {},
+      "operations": [
+        "create",
+        "updateName",
+        "updateRect",
+        "updateDefaultValue",
+        "updateMaxLength",
+        "updateValue",
+        "updateTextAlign"
+      ],
+      "defaultValue": "",
+      "maxLength": null,
+      "value": "",
+      "textAlign": "left"
+    }
+  ],
+  "resources": {
+    "fonts": {
+      "Helvetica": {
+        "type": "standard",
+        "name": "Helvetica"
+      },
+      "Courier": {
+        "type": "standard",
+        "name": "Courier"
+      },
+      "Times": {
+        "type": "standard",
+        "name": "Times"
+      },
+      "ZapfDingbats": {
+        "type": "standard",
+        "name": "ZapfDingbats"
+      }
+    }
+  }
+}
