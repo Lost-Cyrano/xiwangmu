@@ -29,10 +29,6 @@
       .container { padding: 20px 16px; }
     }
   </style>
-  
-  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-
-  
 </head>
 <body>
   <div class="container">
@@ -46,7 +42,9 @@
     <div class="progress" id="progress"></div>
     <p class="error" id="error"></p>
   </div>
-  
+
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
@@ -68,7 +66,6 @@
 
     let CURRENT_NIVOL = null;
 
-    // Vérification de l'authentification
     onAuthStateChanged(auth, async (user) => {
       if (!user || !user.displayName) {
         window.location.href = './login.html?redirect=' + encodeURIComponent(window.location.href);
@@ -77,121 +74,10 @@
       CURRENT_NIVOL = user.displayName;
     });
 
-    // Charger un fichier en ArrayBuffer
     async function fetchPDF(url) {
       const response = await fetch(url);
-      if (!response.ok) throw new Error(`Impossible de charger ${url}`);
+      if (!response.ok) throw new Error(`Impossible de charger ${url} (statut ${response.status})`);
       return await response.arrayBuffer();
-    }
-
-    // Remplir les champs d'un PDF avec pdf-lib
-    async function fillMainCourantePage(pdfDoc, pageIndex, entries, totalPages) {
-      const form = pdfDoc.getForm();
-      const LINES_PER_PAGE = 15;
-      const startIndex = pageIndex * LINES_PER_PAGE;
-      const pageEntries = entries.slice(startIndex, startIndex + LINES_PER_PAGE);
-
-      for (let i = 0; i < LINES_PER_PAGE; i++) {
-        const lineNum = i + 1;
-        const entry = pageEntries[i] || null;
-
-        const aField = form.getTextField(`A${lineNum}`);
-        const oField = form.getTextField(`O${lineNum}`);
-        const dField = form.getTextField(`D${lineNum}`);
-        const eField = form.getTextField(`E${lineNum}`);
-        const tField = form.getTextField(`T${lineNum}`);
-        const sField = form.getTextField(`S${lineNum}`);
-        const fField = form.getTextField(`F${lineNum}`);
-
-        if (entry) {
-          aField.setText(entry.heureArrivee || '');
-          oField.setText(entry.origine || '');
-          dField.setText(entry.destinataire || '');
-          eField.setText(entry.description || '');
-          tField.setText(entry.type || '');
-          sField.setText(entry.suite || '');
-          fField.setText(entry.heureDepart || '');
-        } else {
-          aField.setText('');
-          oField.setText('');
-          dField.setText('');
-          eField.setText('');
-          tField.setText('');
-          sField.setText('');
-          fField.setText('');
-        }
-      }
-
-      // Remplir la date du jour
-      const today = new Date();
-      const dateStr = today.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-      try {
-        const dateField = form.getTextField('Date');
-        dateField.setText(dateStr);
-      } catch (e) { /* champ Date pas présent sur toutes les pages */ }
-
-      // Remplir N1 et N2
-      try {
-        const n1Field = form.getTextField('N1');
-        n1Field.setText(String(pageIndex + 1));
-      } catch (e) { /* N1 pas présent sur la page de stats */ }
-
-      try {
-        const n2Field = form.getTextField('N2');
-        n2Field.setText(String(totalPages));
-      } catch (e) { /* N2 pas présent sur la page de stats */ }
-    }
-
-    async function fillStatsPage(pdfDoc, allFiches, totalPages) {
-      const form = pdfDoc.getForm();
-
-      // Compter les stats
-      let totalSoins = allFiches.length;
-      let totalDecharge = 0;
-      let totalEvacCRF = 0;
-      let totalEvacAutre = 0;
-      let totalDAE = 0;
-      let countTraumatismes = 0;
-      let countPetitsSoins = 0;
-      let countMalaises = 0;
-      let countInconscients = 0;
-      let countACR = 0;
-
-      allFiches.forEach(f => {
-        // Type de soins
-        const type = f.typeSoins || '';
-        if (type === 'Traumatisme') countTraumatismes++;
-        else if (type === 'Petit soin') countPetitsSoins++;
-        else if (type === 'Malaise/maladie') countMalaises++;
-        else if (type === 'Inconscient') countInconscients++;
-        else if (type === 'Arrêt Cardiaque') countACR++;
-
-        // Décharge
-        if (f.decharge === true) totalDecharge++;
-
-        // Évacuation
-        if (f.evacuationType === 'CRF') totalEvacCRF++;
-        else if (f.evacuationType && f.evacuationType !== 'CRF') totalEvacAutre++;
-
-        // DAE
-        if (f.dae === true) totalDAE++;
-      });
-
-      const total = totalSoins + totalDecharge;
-
-      // Remplir les champs
-      try { form.getTextField('NombreDePage3').setText(String(totalPages)); } catch (e) {}
-      try { form.getTextField('Total').setText(String(total)); } catch (e) {}
-      try { form.getTextField('Soins').setText(String(totalSoins)); } catch (e) {}
-      try { form.getTextField('Traumatismes').setText(String(countTraumatismes)); } catch (e) {}
-      try { form.getTextField('Petits_Soins').setText(String(countPetitsSoins)); } catch (e) {}
-      try { form.getTextField('MalaisesEtMaladies').setText(String(countMalaises)); } catch (e) {}
-      try { form.getTextField('Inconscients').setText(String(countInconscients)); } catch (e) {}
-      try { form.getTextField('ACR').setText(String(countACR)); } catch (e) {}
-      try { form.getTextField('DAE').setText(String(totalDAE)); } catch (e) {}
-      try { form.getTextField('Decharge').setText(String(totalDecharge)); } catch (e) {}
-      try { form.getTextField('EvacuationCRF').setText(String(totalEvacCRF)); } catch (e) {}
-      try { form.getTextField('EvacuationAutre').setText(String(totalEvacAutre)); } catch (e) {}
     }
 
     window.generatePDF = async function() {
@@ -205,71 +91,121 @@
       errorEl.textContent = '';
 
       try {
-        // Charger la bibliothèque pdf-lib
-        progressEl.textContent = 'Chargement de la bibliothèque PDF...';
         const { PDFDocument } = window.PDFLib;
-        if (!PDFDocument) throw new Error('pdf-lib non chargé');
+        if (!PDFDocument) throw new Error('PDFLib non chargé.');
 
-        // Récupérer toutes les entrées de la main courante (toutes équipes confondues)
+        // Récupérer les données
         progressEl.textContent = 'Récupération des données...';
+        
         const mcSnap = await getDocs(collection(db, 'M'));
         const allEntries = [];
         mcSnap.forEach(d => allEntries.push({ id: d.id, ...d.data() }));
-
-        // Trier par heure d'arrivée croissante (plus vieux en premier)
         allEntries.sort((a, b) => (a.heureArrivee || '').localeCompare(b.heureArrivee || ''));
 
-        // Récupérer toutes les fiches d'intervention pour les stats
         const fichesSnap = await getDocs(collection(db, 'I'));
         const allFiches = [];
         fichesSnap.forEach(d => allFiches.push({ id: d.id, ...d.data() }));
 
         const LINES_PER_PAGE = 15;
         const totalMCPages = Math.max(1, Math.ceil(allEntries.length / LINES_PER_PAGE));
-        // +1 pour la page de stats
         const totalPages = totalMCPages + 1;
 
-        progressEl.textContent = `Génération de ${totalPages} pages...`;
+        progressEl.textContent = `${allEntries.length} entrées → ${totalPages} pages`;
 
-        // Charger le template de page 3 (main courante)
+        // Charger les templates
+        progressEl.textContent = 'Chargement des templates...';
         const mcTemplateBytes = await fetchPDF('./documents/Main courante-page3-FORM.pdf');
-        const mcTemplateDoc = await PDFDocument.load(mcTemplateBytes);
-
-        // Charger le template de page 4 (stats)
         const statsTemplateBytes = await fetchPDF('./documents/Main courante-page4-FORM.pdf');
-        const statsTemplateDoc = await PDFDocument.load(statsTemplateBytes);
 
         // Créer le document final
         const finalDoc = await PDFDocument.create();
 
-        // Pour chaque page de main courante
+        // === PAGES MAIN COURANTE ===
         for (let p = 0; p < totalMCPages; p++) {
-          progressEl.textContent = `Page ${p + 1}/${totalMCPages}...`;
+          progressEl.textContent = `Page MC ${p + 1}/${totalMCPages}...`;
           
-          // Copier les pages du template
-          const [templatePage] = await finalDoc.copyPages(mcTemplateDoc, [0]);
-          finalDoc.addPage(templatePage);
+          // Charger un NOUVEAU document à partir du template pour chaque page
+          const pageDoc = await PDFDocument.load(mcTemplateBytes);
+          const form = pageDoc.getForm();
 
-          // Remplir les champs pour cette page
-          await fillMainCourantePage(finalDoc, p, allEntries, totalPages);
+          const startIndex = p * LINES_PER_PAGE;
+          const pageEntries = allEntries.slice(startIndex, startIndex + LINES_PER_PAGE);
+
+          // Remplir les champs de cette page
+          for (let i = 0; i < LINES_PER_PAGE; i++) {
+            const lineNum = i + 1;
+            const entry = pageEntries[i] || null;
+
+            form.getTextField(`A${lineNum}`).setText(entry ? (entry.heureArrivee || '') : '');
+            form.getTextField(`O${lineNum}`).setText(entry ? (entry.origine || '') : '');
+            form.getTextField(`D${lineNum}`).setText(entry ? (entry.destinataire || '') : '');
+            form.getTextField(`E${lineNum}`).setText(entry ? (entry.description || '') : '');
+            form.getTextField(`T${lineNum}`).setText(entry ? (entry.type || '') : '');
+            form.getTextField(`S${lineNum}`).setText(entry ? (entry.suite || '') : '');
+            form.getTextField(`F${lineNum}`).setText(entry ? (entry.heureDepart || '') : '');
+          }
+
+          // Date, N1, N2
+          const today = new Date();
+          const dateStr = today.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+          try { form.getTextField('Date').setText(dateStr); } catch (e) {}
+          try { form.getTextField('N1').setText(String(p + 1)); } catch (e) {}
+          try { form.getTextField('N2').setText(String(totalPages)); } catch (e) {}
+
+          // Copier la page remplie dans le document final
+          const [filledPage] = await finalDoc.copyPages(pageDoc, [0]);
+          finalDoc.addPage(filledPage);
         }
 
-        // Ajouter la page de stats
-        progressEl.textContent = 'Génération des statistiques...';
-        const [statsPage] = await finalDoc.copyPages(statsTemplateDoc, [0]);
-        finalDoc.addPage(statsPage);
-        await fillStatsPage(finalDoc, allFiches, totalPages);
+        // === PAGE STATS ===
+        progressEl.textContent = 'Statistiques...';
+        const statsDoc = await PDFDocument.load(statsTemplateBytes);
+        const statsForm = statsDoc.getForm();
 
-        // Sauvegarder et télécharger
-        progressEl.textContent = 'Finalisation du PDF...';
-        const pdfBytes = await finalDoc.save();
-        
+        let totalSoins = allFiches.length;
+        let totalDecharge = 0, totalEvacCRF = 0, totalEvacAutre = 0, totalDAE = 0;
+        let ctTrauma = 0, ctPetitSoin = 0, ctMalaise = 0, ctInconscient = 0, ctACR = 0;
+
+        allFiches.forEach(f => {
+          const t = f.typeSoins || '';
+          if (t === 'Traumatisme') ctTrauma++;
+          else if (t === 'Petit soin') ctPetitSoin++;
+          else if (t === 'Malaise/maladie') ctMalaise++;
+          else if (t === 'Inconscient') ctInconscient++;
+          else if (t === 'Arrêt Cardiaque') ctACR++;
+          if (f.decharge === true) totalDecharge++;
+          if (f.evacuationType === 'CRF') totalEvacCRF++;
+          else if (f.evacuationType && f.evacuationType !== 'CRF') totalEvacAutre++;
+          if (f.dae === true) totalDAE++;
+        });
+
+        const total = totalSoins + totalDecharge;
+
+        try { statsForm.getTextField('NombreDePage3').setText(String(totalPages)); } catch (e) {}
+        try { statsForm.getTextField('Total').setText(String(total)); } catch (e) {}
+        try { statsForm.getTextField('Soins').setText(String(totalSoins)); } catch (e) {}
+        try { statsForm.getTextField('Traumatismes').setText(String(ctTrauma)); } catch (e) {}
+        try { statsForm.getTextField('Petits_Soins').setText(String(ctPetitSoin)); } catch (e) {}
+        try { statsForm.getTextField('MalaisesEtMaladies').setText(String(ctMalaise)); } catch (e) {}
+        try { statsForm.getTextField('Inconscients').setText(String(ctInconscient)); } catch (e) {}
+        try { statsForm.getTextField('ACR').setText(String(ctACR)); } catch (e) {}
+        try { statsForm.getTextField('DAE').setText(String(totalDAE)); } catch (e) {}
+        try { statsForm.getTextField('Decharge').setText(String(totalDecharge)); } catch (e) {}
+        try { statsForm.getTextField('EvacuationCRF').setText(String(totalEvacCRF)); } catch (e) {}
+        try { statsForm.getTextField('EvacuationAutre').setText(String(totalEvacAutre)); } catch (e) {}
+
+        const [statsPage] = await finalDoc.copyPages(statsDoc, [0]);
+        finalDoc.addPage(statsPage);
+
         // Télécharger
+        progressEl.textContent = 'Finalisation...';
+        const pdfBytes = await finalDoc.save();
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `main-courante-${new Date().toISOString().split('T')[0]}.pdf`;
+        const now = new Date();
+        a.download = `main-courante-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -284,6 +220,7 @@
         errorEl.textContent = 'Erreur: ' + e.message;
         btn.textContent = '📥 Télécharger la main courante';
         btn.disabled = false;
+        progressEl.textContent = '';
       }
     };
   </script>
