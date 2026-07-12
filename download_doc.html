@@ -151,10 +151,8 @@
           try { form.getTextField('N1').setText(String(p + 1)); } catch (e) {}
           try { form.getTextField('N2').setText(String(n2Value)); } catch (e) {}
 
-          // Forcer la mise à jour de l'apparence des champs avant de verrouiller
-          form.getFields().forEach(field => {
-            field.enableReadOnly();
-          });
+          // Aplatir le formulaire = contenu visible mais plus éditable
+          form.flatten();
 
           // Copier dans le document final
           const [filledPage] = await finalDoc.copyPages(pageDoc, [0]);
@@ -198,10 +196,8 @@
         try { statsForm.getTextField('EvacuationCRF').setText(String(totalEvacCRF)); } catch (e) {}
         try { statsForm.getTextField('EvacuationAutre').setText(String(totalEvacAutre)); } catch (e) {}
 
-        // Verrouiller les champs de la page stats
-        statsForm.getFields().forEach(field => {
-          field.enableReadOnly();
-        });
+        // Aplatir le formulaire des stats
+        statsForm.flatten();
 
         const [statsPage] = await finalDoc.copyPages(statsDoc, [0]);
         finalDoc.addPage(statsPage);
