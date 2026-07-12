@@ -43,6 +43,9 @@
     <p class="error" id="error"></p>
   </div>
 
+  <!-- Charger pdf-lib AVANT le module -->
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
@@ -76,11 +79,11 @@
     // Charger un fichier en ArrayBuffer
     async function fetchPDF(url) {
       const response = await fetch(url);
-      if (!response.ok) throw new Error(`Impossible de charger ${url}`);
+      if (!response.ok) throw new Error(`Impossible de charger ${url} (statut ${response.status})`);
       return await response.arrayBuffer();
     }
 
-    // Remplir les champs d'un PDF avec pdf-lib
+    // Remplir les champs d'une page de main courante
     async function fillMainCourantePage(pdfDoc, pageIndex, entries, totalPages) {
       const form = pdfDoc.getForm();
       const LINES_PER_PAGE = 15;
@@ -124,24 +127,24 @@
       try {
         const dateField = form.getTextField('Date');
         dateField.setText(dateStr);
-      } catch (e) { /* champ Date pas présent sur toutes les pages */ }
+      } catch (e) { /* champ Date absent sur certaines pages */ }
 
       // Remplir N1 et N2
       try {
         const n1Field = form.getTextField('N1');
         n1Field.setText(String(pageIndex + 1));
-      } catch (e) { /* N1 pas présent sur la page de stats */ }
+      } catch (e) { /* N1 absent sur page stats */ }
 
       try {
         const n2Field = form.getTextField('N2');
         n2Field.setText(String(totalPages));
-      } catch (e) { /* N2 pas présent sur la page de stats */ }
+      } catch (e) { /* N2 absent sur page stats */ }
     }
 
+    // Remplir la page de statistiques
     async function fillStatsPage(pdfDoc, allFiches, totalPages) {
       const form = pdfDoc.getForm();
 
-      // Compter les stats
       let totalSoins = allFiches.length;
       let totalDecharge = 0;
       let totalEvacCRF = 0;
@@ -154,7 +157,6 @@
       let countACR = 0;
 
       allFiches.forEach(f => {
-        // Type de soins
         const type = f.typeSoins || '';
         if (type === 'Traumatisme') countTraumatismes++;
         else if (type === 'Petit soin') countPetitsSoins++;
@@ -162,20 +164,14 @@
         else if (type === 'Inconscient') countInconscients++;
         else if (type === 'Arrêt Cardiaque') countACR++;
 
-        // Décharge
         if (f.decharge === true) totalDecharge++;
-
-        // Évacuation
         if (f.evacuationType === 'CRF') totalEvacCRF++;
         else if (f.evacuationType && f.evacuationType !== 'CRF') totalEvacAutre++;
-
-        // DAE
         if (f.dae === true) totalDAE++;
       });
 
       const total = totalSoins + totalDecharge;
 
-      // Remplir les champs
       try { form.getTextField('NombreDePage3').setText(String(totalPages)); } catch (e) {}
       try { form.getTextField('Total').setText(String(total)); } catch (e) {}
       try { form.getTextField('Soins').setText(String(totalSoins)); } catch (e) {}
@@ -201,71 +197,68 @@
       errorEl.textContent = '';
 
       try {
-        // Charger la bibliothèque pdf-lib
-        progressEl.textContent = 'Chargement de la bibliothèque PDF...';
-        const { PDFDocument } = await import('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js');
-        if (!PDFDocument) throw new Error('pdf-lib non chargé');
+        // Vérifier que PDFLib est bien chargé globalement
+        const { PDFDocument } = window.PDFLib;
+        if (!PDFDocument) {
+          throw new Error('PDFLib non chargé. Vérifiez votre connexion internet.');
+        }
 
-        // Récupérer toutes les entrées de la main courante (toutes équipes confondues)
+        // Récupérer toutes les entrées de la main courante
         progressEl.textContent = 'Récupération des données...';
         const mcSnap = await getDocs(collection(db, 'M'));
         const allEntries = [];
         mcSnap.forEach(d => allEntries.push({ id: d.id, ...d.data() }));
 
-        // Trier par heure d'arrivée croissante (plus vieux en premier)
+        // Trier par heure d'arrivée croissante
         allEntries.sort((a, b) => (a.heureArrivee || '').localeCompare(b.heureArrivee || ''));
 
-        // Récupérer toutes les fiches d'intervention pour les stats
+        // Récupérer toutes les fiches d'intervention
         const fichesSnap = await getDocs(collection(db, 'I'));
         const allFiches = [];
         fichesSnap.forEach(d => allFiches.push({ id: d.id, ...d.data() }));
 
         const LINES_PER_PAGE = 15;
         const totalMCPages = Math.max(1, Math.ceil(allEntries.length / LINES_PER_PAGE));
-        // +1 pour la page de stats
         const totalPages = totalMCPages + 1;
 
-        progressEl.textContent = `Génération de ${totalPages} pages...`;
+        progressEl.textContent = `${allEntries.length} entrées, ${totalPages} pages...`;
 
-        // Charger le template de page 3 (main courante)
+        // Charger les templates
+        progressEl.textContent = 'Chargement des templates...';
         const mcTemplateBytes = await fetchPDF('./documents/Main courante-page3-FORM.pdf');
         const mcTemplateDoc = await PDFDocument.load(mcTemplateBytes);
 
-        // Charger le template de page 4 (stats)
         const statsTemplateBytes = await fetchPDF('./documents/Main courante-page4-FORM.pdf');
         const statsTemplateDoc = await PDFDocument.load(statsTemplateBytes);
 
         // Créer le document final
         const finalDoc = await PDFDocument.create();
 
-        // Pour chaque page de main courante
+        // Pages de main courante
         for (let p = 0; p < totalMCPages; p++) {
           progressEl.textContent = `Page ${p + 1}/${totalMCPages}...`;
-          
-          // Copier les pages du template
           const [templatePage] = await finalDoc.copyPages(mcTemplateDoc, [0]);
           finalDoc.addPage(templatePage);
-
-          // Remplir les champs pour cette page
           await fillMainCourantePage(finalDoc, p, allEntries, totalPages);
         }
 
-        // Ajouter la page de stats
-        progressEl.textContent = 'Génération des statistiques...';
+        // Page de stats
+        progressEl.textContent = 'Statistiques...';
         const [statsPage] = await finalDoc.copyPages(statsTemplateDoc, [0]);
         finalDoc.addPage(statsPage);
         await fillStatsPage(finalDoc, allFiches, totalPages);
 
-        // Sauvegarder et télécharger
-        progressEl.textContent = 'Finalisation du PDF...';
+        // Sauvegarder
+        progressEl.textContent = 'Finalisation...';
         const pdfBytes = await finalDoc.save();
-        
+
         // Télécharger
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `main-courante-${new Date().toISOString().split('T')[0]}.pdf`;
+        const today = new Date();
+        a.download = `main-courante-${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}.pdf`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -280,6 +273,7 @@
         errorEl.textContent = 'Erreur: ' + e.message;
         btn.textContent = '📥 Télécharger la main courante';
         btn.disabled = false;
+        progressEl.textContent = '';
       }
     };
   </script>
