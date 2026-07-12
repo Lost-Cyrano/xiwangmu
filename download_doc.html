@@ -108,7 +108,6 @@
 
         const LINES_PER_PAGE = 15;
         const totalMCPages = Math.max(1, Math.ceil(allEntries.length / LINES_PER_PAGE));
-        // N2 = nombre de pages de main courante UNIQUEMENT (pas la page stats)
         const n2Value = totalMCPages;
 
         progressEl.textContent = `${allEntries.length} entrées → ${totalMCPages} page(s) MC + 1 page stats`;
@@ -152,8 +151,10 @@
           try { form.getTextField('N1').setText(String(p + 1)); } catch (e) {}
           try { form.getTextField('N2').setText(String(n2Value)); } catch (e) {}
 
-          // Verrouiller tous les champs de cette page
-          form.getFields().forEach(field => field.enableReadOnly());
+          // Forcer la mise à jour de l'apparence des champs avant de verrouiller
+          form.getFields().forEach(field => {
+            field.enableReadOnly();
+          });
 
           // Copier dans le document final
           const [filledPage] = await finalDoc.copyPages(pageDoc, [0]);
@@ -198,7 +199,9 @@
         try { statsForm.getTextField('EvacuationAutre').setText(String(totalEvacAutre)); } catch (e) {}
 
         // Verrouiller les champs de la page stats
-        statsForm.getFields().forEach(field => field.enableReadOnly());
+        statsForm.getFields().forEach(field => {
+          field.enableReadOnly();
+        });
 
         const [statsPage] = await finalDoc.copyPages(statsDoc, [0]);
         finalDoc.addPage(statsPage);
