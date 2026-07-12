@@ -122,6 +122,17 @@
     .btn-delete { background: white; color: #c00; border: 1px solid #fcc; padding: 9px 14px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; margin-right: auto; }
     .btn-delete:hover { background: #fff5f5; }
 
+    /* Toggle équipe origine */
+    .toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .toggle-label { font-size: 0.75rem; color: #666; }
+    .toggle-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #e0e0e0; border-radius: 24px; transition: 0.2s; }
+    .toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s; }
+    .toggle-switch input:checked + .toggle-slider { background: #e60000; }
+    .toggle-switch input:checked + .toggle-slider:before { transform: translateX(20px); }
+    .field-hint { font-size: 0.65rem; color: #aaa; margin-top: 2px; }
+
     /* Sélecteur d'accès (fiche) */
     .access-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
     .access-chip { display: flex; align-items: center; gap: 4px; padding: 5px 8px; border-radius: 14px; border: 1px solid #e0e0e0; background: white; font-size: 0.7rem; cursor: pointer; transition: all 0.15s; }
@@ -253,14 +264,32 @@
 <div class="modal-overlay" id="mcModal">
   <div class="modal">
     <h3 id="mcModalTitle">Nouvelle entrée</h3>
+    
+    <div class="toggle-row">
+      <label class="toggle-switch">
+        <input type="checkbox" id="mc-equipe-origine" onchange="toggleEquipeOrigine()">
+        <span class="toggle-slider"></span>
+      </label>
+      <span class="toggle-label" id="mc-toggle-label">L'équipe est à l'origine</span>
+    </div>
+
+    <div class="field" id="mc-origine-field">
+      <label id="mc-origine-label">Origine</label>
+      <input type="text" id="mc-origine" placeholder="Qui émet ?">
+      <div class="field-hint" id="mc-origine-hint"></div>
+    </div>
+
+    <div class="field" id="mc-destinataire-field" style="display:none;">
+      <label id="mc-destinataire-label">Destinataire</label>
+      <input type="text" id="mc-destinataire" placeholder="Qui reçoit ?">
+      <div class="field-hint" id="mc-destinataire-hint"></div>
+    </div>
+
     <div class="field">
       <label>Description</label>
       <textarea id="mc-description" placeholder="Décrivez l'événement..."></textarea>
     </div>
-    <div class="field">
-      <label>Origine (optionnel)</label>
-      <input type="text" id="mc-origine" placeholder="Qui émet ?">
-    </div>
+
     <div class="btn-row">
       <button class="btn-delete" id="mc-delete-btn" style="display:none;" onclick="deleteMainCouranteFromModal()">Supprimer</button>
       <button class="btn-cancel" onclick="closeMainCouranteModal()">Annuler</button>
@@ -323,13 +352,11 @@
     CURRENT_NIVOL = user.displayName;
     const role = user.photoURL;
 
-    // Vérifier que l'utilisateur a bien le rôle "cdp" (Chef de Poste)
     if (role !== 'cdp') {
       window.location.href = './user.html';
       return;
     }
 
-    // Vérifier que le NIVOL existe bien dans la base et a toujours le rôle Chef de Poste
     try {
       const userSnap = await getDoc(doc(db, 'U', CURRENT_NIVOL));
       if (!userSnap.exists()) {
@@ -673,10 +700,36 @@
   }
 
   // ========== MC MODAL ==========
+  window.toggleEquipeOrigine = function() {
+    const isEquipeOrigine = document.getElementById('mc-equipe-origine').checked;
+    const origineField = document.getElementById('mc-origine-field');
+    const destinataireField = document.getElementById('mc-destinataire-field');
+    const origineLabel = document.getElementById('mc-origine-label');
+    const origineHint = document.getElementById('mc-origine-hint');
+    const toggleLabel = document.getElementById('mc-toggle-label');
+
+    if (isEquipeOrigine) {
+      // L'équipe est à l'origine → on demande le destinataire
+      origineField.style.display = 'none';
+      destinataireField.style.display = 'block';
+      toggleLabel.textContent = 'L\'équipe est à l\'origine';
+    } else {
+      // Comportement normal → on demande l'origine
+      origineField.style.display = 'block';
+      destinataireField.style.display = 'none';
+      toggleLabel.textContent = 'L\'équipe est destinataire';
+    }
+  };
+
   window.openMainCouranteModal = function() {
     document.getElementById('mcModalTitle').textContent = 'Nouvelle entrée';
-    document.getElementById('mc-description').value = '';
+    document.getElementById('mc-equipe-origine').checked = false;
     document.getElementById('mc-origine').value = '';
+    document.getElementById('mc-destinataire').value = '';
+    document.getElementById('mc-description').value = '';
+    document.getElementById('mc-origine-field').style.display = 'block';
+    document.getElementById('mc-destinataire-field').style.display = 'none';
+    document.getElementById('mc-toggle-label').textContent = 'L\'équipe est destinataire';
     document.getElementById('mcModal').dataset.editId = '';
     document.getElementById('mcModal').dataset.isAuto = 'false';
     document.getElementById('mc-delete-btn').style.display = 'none';
@@ -689,13 +742,26 @@
     if (!currentEquipeId) return;
     const editId = document.getElementById('mcModal').dataset.editId;
     const isAuto = document.getElementById('mcModal').dataset.isAuto === 'true';
+    const isEquipeOrigine = document.getElementById('mc-equipe-origine').checked;
     const now = new Date();
     const heureArrivee = editId ? undefined : `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
+    let origine, destinataire;
+
+    if (isEquipeOrigine) {
+      // L'équipe est à l'origine, l'input utilisateur est le destinataire
+      origine = currentTeamName;
+      destinataire = document.getElementById('mc-destinataire').value.trim() || null;
+    } else {
+      // Comportement normal : l'input utilisateur est l'origine, l'équipe est destinataire
+      origine = document.getElementById('mc-origine').value.trim() || null;
+      destinataire = currentTeamName;
+    }
+
     const data = {
       equipe: currentEquipeId,
-      destinataire: currentTeamName,
-      origine: document.getElementById('mc-origine').value.trim() || null,
+      origine: origine,
+      destinataire: destinataire,
       description: document.getElementById('mc-description').value.trim() || null,
     };
     
@@ -722,9 +788,24 @@
       const snap = await getDoc(doc(db, 'M', id));
       if (!snap.exists()) return;
       const m = snap.data();
+      
       document.getElementById('mcModalTitle').textContent = isAuto ? 'Modifier (fiche liée)' : 'Modifier l\'entrée';
       document.getElementById('mc-description').value = m.description || '';
-      document.getElementById('mc-origine').value = m.origine || '';
+      
+      // Déterminer si l'équipe est à l'origine ou destinataire
+      const isEquipeOrigine = (m.origine === currentTeamName);
+      document.getElementById('mc-equipe-origine').checked = isEquipeOrigine;
+      
+      if (isEquipeOrigine) {
+        document.getElementById('mc-destinataire').value = m.destinataire || '';
+        document.getElementById('mc-origine').value = '';
+      } else {
+        document.getElementById('mc-origine').value = m.origine || '';
+        document.getElementById('mc-destinataire').value = '';
+      }
+      
+      toggleEquipeOrigine();
+      
       document.getElementById('mcModal').dataset.editId = id;
       document.getElementById('mcModal').dataset.isAuto = isAuto ? 'true' : 'false';
       document.getElementById('mc-delete-btn').style.display = isAuto ? 'none' : 'inline-block';
