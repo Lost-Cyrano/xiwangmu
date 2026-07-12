@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Xiwangmu CRF – Intervention</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; min-height: 100vh; -webkit-tap-highlight-color: transparent; }
+
+    header { background: white; border-bottom: 1px solid #e5e5e5; padding: 10px 16px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+    header .btn-back { width: 32px; height: 32px; border-radius: 50%; background: white; border: 1px solid #e0e0e0; color: #666; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: all 0.15s; line-height: 1; flex-shrink: 0; text-decoration: none; }
+    header .btn-back:hover { background: #f5f5f5; border-color: #ccc; }
+    header .brand { display: flex; align-items: center; gap: 8px; }
+    header .brand img { height: 24px; }
+    header .brand span { font-weight: 600; font-size: 0.95rem; }
+
+    main { width: 100%; max-width: 100%; margin: 0 auto; padding: 12px; }
+    @media (min-width: 500px) { main { padding: 16px; } }
+    @media (min-width: 700px) { main { padding: 24px; } }
+    @media (min-width: 1000px) { main { max-width: 800px; padding: 32px 24px; } }
+
+    .card { background: white; border-radius: 12px; border: 1px solid #e5e5e5; padding: 14px; margin-bottom: 14px; width: 100%; }
+    @media (min-width: 500px) { .card { padding: 18px; } }
+    @media (min-width: 700px) { .card { padding: 22px; } }
+    @media (min-width: 1000px) { .card { padding: 24px; } }
+    .card h2 { font-size: 0.9rem; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
+    @media (min-width: 500px) { .card h2 { font-size: 0.95rem; } }
+
+    .field { margin-bottom: 12px; }
+    .field label { font-size: 0.7rem; color: #888; display: block; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .field input, .field select, .field textarea { width: 100%; padding: 9px 12px; border: 1px solid #e5e5e5; border-radius: 8px; font-size: 0.85rem; font-family: inherit; background: #fafafa; transition: border 0.15s; }
+    .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: #e60000; background: white; box-shadow: 0 0 0 3px rgba(230,0,0,0.06); }
+    .field textarea { resize: vertical; min-height: 60px; }
+
+    .row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .row .field { flex: 1; min-width: 140px; }
+
+    .field-value { font-size: 0.85rem; color: #444; padding: 9px 0; }
+    .field-value.empty { color: #ccc; font-style: italic; }
+
+    .btn-save { background: #e60000; color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: background 0.15s; }
+    .btn-save:hover { background: #c40000; }
+    .btn-save:disabled { background: #ccc; cursor: not-allowed; }
+
+    .btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+    .msg { font-size: 0.8rem; margin-top: 8px; }
+    .msg.success { color: #0a0; }
+    .msg.error { color: #c00; }
+
+    /* Accès */
+    .access-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .access-chip { display: flex; align-items: center; gap: 4px; padding: 5px 8px; border-radius: 14px; border: 1px solid #e0e0e0; background: white; font-size: 0.7rem; cursor: pointer; transition: all 0.15s; }
+    .access-chip.selected { background: #e60000; color: white; border-color: #e60000; }
+    .access-chip.team-chip { font-weight: 500; }
+    .access-chip .chip-avatar { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.55rem; font-weight: 700; }
+    .access-chip.selected .chip-avatar { background: rgba(255,255,255,0.3); }
+    .access-chip:not(.selected) .chip-avatar { background: #e60000; color: white; }
+    .access-chip.readonly { cursor: default; opacity: 0.8; }
+    .access-chip.readonly.selected { background: #e60000; color: white; border-color: #e60000; cursor: default; }
+
+    .loading { text-align: center; padding: 40px 20px; color: #bbb; font-size: 0.9rem; }
+    .error-banner { background: #fff5f5; border: 1px solid #fcc; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; color: #c00; font-size: 0.8rem; }
+
+    @media (min-width: 500px) {
+      header .brand img { height: 26px; }
+    }
+    @media (min-width: 700px) {
+      header .brand img { height: 28px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <button class="btn-back" onclick="goBack()" title="Retour">←</button>
+  <div class="brand">
+    <img src="https://github.com/Lost-Cyrano/xiwangmu/blob/main/images/Xiwangmu.png?raw=true" alt="Xiwangmu">
+    <span>Fiche d'Intervention</span>
+  </div>
+</header>
+
+<main id="main-content">
+  <div class="loading">Chargement...</div>
+</main>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAigiFFGONooT17W11gnABs1aHKN0O3N9s",
+    authDomain: "xiwangmu-crf.firebaseapp.com",
+    projectId: "xiwangmu-crf",
+    storageBucket: "xiwangmu-crf.firebasestorage.app",
+    messagingSenderId: "990701485221",
+    appId: "1:990701485221:web:efa9e1842c07af4fd1a14c",
+    measurementId: "G-J9TZ23YECY"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  let CURRENT_NIVOL = null;
+  let USER_ROLE = null; // 'cdp' ou 'user'
+  let HOME_PAGE = './user.html';
+  let ficheId = null;
+  let ficheData = null;
+  let teamMembers = [];
+  let canEditAccess = false;
+  let selectedAccess = [];
+
+  // Récupérer l'ID de la fiche depuis l'URL
+  const urlParams = new URLSearchParams(window.location.search);
+  ficheId = urlParams.get('id');
+
+  if (!ficheId) {
+    // Pas d'ID → on attend l'auth puis on redirige
+    onAuthStateChanged(auth, async (user) => {
+      if (user && user.displayName) {
+        const role = user.photoURL;
+        window.location.href = role === 'cdp' ? './ci.html' : './user.html';
+      } else {
+        window.location.href = './login.html';
+      }
+    });
+  } else {
+    // ID présent → on vérifie l'auth
+    onAuthStateChanged(auth, async (user) => {
+      if (!user || !user.displayName) {
+        window.location.href = './login.html?redirect=' + encodeURIComponent(window.location.href);
+        return;
+      }
+
+      CURRENT_NIVOL = user.displayName;
+      USER_ROLE = user.photoURL;
+      HOME_PAGE = USER_ROLE === 'cdp' ? './ci.html' : './user.html';
+      canEditAccess = USER_ROLE === 'cdp';
+
+      await init();
+    });
+  }
+
+  window.goBack = function() {
+    window.location.href = HOME_PAGE;
+  };
+
+  async function init() {
+    const container = document.getElementById('main-content');
+
+    try {
+      // Charger la fiche
+      const ficheSnap = await getDoc(doc(db, 'I', ficheId));
+      if (!ficheSnap.exists()) {
+        container.innerHTML = `<div class="error-banner">Fiche introuvable.</div>
+          <button class="btn-save" onclick="goBack()" style="margin-top:10px;">Retour</button>`;
+        return;
+      }
+
+      ficheData = { id: ficheSnap.id, ...ficheSnap.data() };
+
+      // Charger l'utilisateur et vérifier l'équipe + accès
+      const userSnap = await getDoc(doc(db, 'U', CURRENT_NIVOL));
+      if (!userSnap.exists()) {
+        window.location.href = './login.html';
+        return;
+      }
+      const userData = userSnap.data();
+      const userEquipeId = userData.E || null;
+
+      // Vérifier que l'utilisateur est dans la même équipe que la fiche
+      if (ficheData.equipe !== userEquipeId) {
+        container.innerHTML = `<div class="error-banner">Vous n'avez pas accès à cette fiche (équipe différente).</div>
+          <button class="btn-save" onclick="goBack()" style="margin-top:10px;">Retour</button>`;
+        return;
+      }
+
+      // Vérifier les accès
+      const access = ficheData.access;
+      const hasAccess = checkAccess(access, CURRENT_NIVOL);
+      if (!hasAccess) {
+        container.innerHTML = `<div class="error-banner">Vous n'avez pas accès à cette fiche (accès restreint).</div>
+          <button class="btn-save" onclick="goBack()" style="margin-top:10px;">Retour</button>`;
+        return;
+      }
+
+      // Charger les membres de l'équipe
+      await loadTeamMembers(ficheData.equipe);
+
+      // Initialiser selectedAccess
+      selectedAccess = ficheData.access && ficheData.access.length > 0 ? [...ficheData.access] : ['__TEAM__'];
+
+      // Afficher la fiche
+      renderFiche();
+
+    } catch (e) {
+      console.error('Erreur:', e);
+      container.innerHTML = `<div class="error-banner">Erreur: ${e.message}</div>
+        <button class="btn-save" onclick="goBack()" style="margin-top:10px;">Retour</button>`;
+    }
+  }
+
+  function checkAccess(accessList, nivol) {
+    if (!accessList || accessList.length === 0 || accessList.includes('__TEAM__')) return true;
+    return accessList.includes(nivol);
+  }
+
+  async function loadTeamMembers(equipeId) {
+    try {
+      const q = query(collection(db, 'U'), where('E', '==', equipeId));
+      const snap = await getDocs(q);
+      teamMembers = [];
+      snap.forEach(d => teamMembers.push({ nivol: d.id, nom: d.data().I || '?', fonction: d.data().F || '?' }));
+    } catch (e) {
+      console.error('Erreur chargement équipe:', e);
+    }
+  }
+
+  function getInitials(nom) {
+    if (!nom || nom === 'Inconnu') return '?';
+    const parts = nom.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return nom.substring(0, 2).toUpperCase();
+  }
+
+  function buildAccessHTML() {
+    if (!canEditAccess) {
+      // Affichage en lecture seule
+      let html = '';
+      if (selectedAccess.includes('__TEAM__')) {
+        html += `<div class="access-chip team-chip selected readonly"><span class="chip-avatar">T</span> Toute l'équipe</div>`;
+      } else {
+        selectedAccess.forEach(nivol => {
+          const m = teamMembers.find(tm => tm.nivol === nivol);
+          if (m) {
+            html += `<div class="access-chip selected readonly"><span class="chip-avatar">${getInitials(m.nom)}</span> ${m.nom}</div>`;
+          }
+        });
+      }
+      return html;
+    }
+
+    // Mode édition
+    let html = `<div class="access-chip team-chip ${selectedAccess.includes('__TEAM__') ? 'selected' : ''}" data-nivol="__TEAM__" onclick="toggleAccess(this)">
+      <span class="chip-avatar">T</span> Toute l'équipe
+    </div>`;
+    
+    teamMembers.forEach(m => {
+      const isSelected = selectedAccess.includes(m.nivol);
+      html += `<div class="access-chip ${isSelected ? 'selected' : ''}" data-nivol="${m.nivol}" onclick="toggleAccess(this)">
+        <span class="chip-avatar">${getInitials(m.nom)}</span> ${m.nom}
+      </div>`;
+    });
+    return html;
+  }
+
+  window.toggleAccess = function(chip) {
+    if (!canEditAccess) return;
+    const nivol = chip.dataset.nivol;
+    
+    if (nivol === '__TEAM__') {
+      if (selectedAccess.includes('__TEAM__')) {
+        selectedAccess = [];
+      } else {
+        selectedAccess = ['__TEAM__'];
+      }
+    } else {
+      if (selectedAccess.includes(nivol)) {
+        selectedAccess = selectedAccess.filter(n => n !== nivol);
+      } else {
+        selectedAccess = selectedAccess.filter(n => n !== '__TEAM__');
+        selectedAccess.push(nivol);
+      }
+      if (selectedAccess.length === teamMembers.length && teamMembers.length > 0) {
+        selectedAccess = ['__TEAM__'];
+      }
+      if (selectedAccess.length === 0) {
+        selectedAccess = ['__TEAM__'];
+      }
+    }
+    // Mettre à jour l'affichage
+    document.getElementById('access-container').innerHTML = buildAccessHTML();
+  };
+
+  function renderFiche() {
+    const container = document.getElementById('main-content');
+    const d = ficheData;
+    const createdAt = d.createdAt?.toDate ? d.createdAt.toDate() : new Date(d.createdAt || Date.now());
+
+    container.innerHTML = `
+      <div class="card">
+        <h2>Informations générales</h2>
+        <div class="row">
+          <div class="field">
+            <label>N° de fiche</label>
+            <div class="field-value">${ficheId}</div>
+          </div>
+          <div class="field">
+            <label>Date de création</label>
+            <div class="field-value">${createdAt.toLocaleDateString('fr-FR', {day:'numeric',month:'long',year:'numeric'})} à ${createdAt.toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'})}</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Victime</label>
+          <input type="text" id="edit-victimeNom" value="${d.victimeNom || ''}" placeholder="NOM Prénom">
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Âge</label>
+            <input type="number" id="edit-victimeAge" value="${d.victimeAge || ''}" placeholder="Âge" min="0" max="150">
+          </div>
+          <div class="field">
+            <label>Origine</label>
+            <select id="edit-origine">
+              <option value="">--</option>
+              <option value="Orga" ${d.origine === 'Orga' ? 'selected' : ''}>Orga</option>
+              <option value="Public" ${d.origine === 'Public' ? 'selected' : ''}>Public</option>
+              <option value="Autre" ${d.origine && d.origine !== 'Orga' && d.origine !== 'Public' ? 'selected' : ''}>Autre</option>
+            </select>
+            <input type="text" id="edit-origine-autre" value="${d.origine && d.origine !== 'Orga' && d.origine !== 'Public' ? d.origine : ''}" placeholder="Précisez..." style="margin-top:4px;${d.origine && d.origine !== 'Orga' && d.origine !== 'Public' ? '' : 'display:none;'}">
+          </div>
+        </div>
+        <div class="field">
+          <label>Type de soins</label>
+          <select id="edit-typeSoins">
+            <option value="">--</option>
+            <option value="Petit soin" ${d.typeSoins === 'Petit soin' ? 'selected' : ''}>Petit soin</option>
+            <option value="Traumatisme" ${d.typeSoins === 'Traumatisme' ? 'selected' : ''}>Traumatisme</option>
+            <option value="Malaise/maladie" ${d.typeSoins === 'Malaise/maladie' ? 'selected' : ''}>Malaise/maladie</option>
+            <option value="Inconscient" ${d.typeSoins === 'Inconscient' ? 'selected' : ''}>Inconscient</option>
+            <option value="Arrêt Cardiaque" ${d.typeSoins === 'Arrêt Cardiaque' ? 'selected' : ''}>Arrêt Cardiaque</option>
+            <option value="Autre" ${d.typeSoins && !['Petit soin','Traumatisme','Malaise/maladie','Inconscient','Arrêt Cardiaque'].includes(d.typeSoins) && d.typeSoins !== '' ? 'selected' : ''}>Autre</option>
+          </select>
+          <input type="text" id="edit-typeSoins-autre" value="${d.typeSoins && !['Petit soin','Traumatisme','Malaise/maladie','Inconscient','Arrêt Cardiaque',''].includes(d.typeSoins) ? d.typeSoins : ''}" placeholder="Précisez..." style="margin-top:4px;${d.typeSoins && !['Petit soin','Traumatisme','Malaise/maladie','Inconscient','Arrêt Cardiaque',''].includes(d.typeSoins) ? '' : 'display:none;'}">
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Suivi médical</h2>
+        <div class="row">
+          <div class="field">
+            <label>Décharge de responsabilité</label>
+            <select id="edit-decharge">
+              <option value="false" ${d.decharge !== true ? 'selected' : ''}>Non</option>
+              <option value="true" ${d.decharge === true ? 'selected' : ''}>Oui</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>DAE utilisé</label>
+            <select id="edit-dae">
+              <option value="false" ${d.dae !== true ? 'selected' : ''}>Non</option>
+              <option value="true" ${d.dae === true ? 'selected' : ''}>Oui</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Évacuation</label>
+          <select id="edit-evacuationType">
+            <option value="">Aucune</option>
+            <option value="CRF" ${d.evacuationType === 'CRF' ? 'selected' : ''}>Croix-Rouge</option>
+            <option value="SAMU" ${d.evacuationType === 'SAMU' ? 'selected' : ''}>SAMU</option>
+            <option value="Pompiers" ${d.evacuationType === 'Pompiers' ? 'selected' : ''}>Pompiers</option>
+            <option value="Autre" ${d.evacuationType && !['CRF','SAMU','Pompiers'].includes(d.evacuationType) ? 'selected' : ''}>Autre</option>
+          </select>
+          <input type="text" id="edit-evacuationAutre" value="${d.evacuationType && !['CRF','SAMU','Pompiers',''].includes(d.evacuationType) ? d.evacuationType : ''}" placeholder="Précisez..." style="margin-top:4px;${d.evacuationType && !['CRF','SAMU','Pompiers',''].includes(d.evacuationType) ? '' : 'display:none;'}">
+        </div>
+        <div class="field">
+          <label>Heure de fin de prise en charge</label>
+          <input type="time" id="edit-heureDepart" value="${d.heureDepart || ''}">
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Accès ${canEditAccess ? '<span style="font-size:0.7rem;color:#888;font-weight:400;">(modifiable)</span>' : '<span style="font-size:0.7rem;color:#888;font-weight:400;">(lecture seule)</span>'}</h2>
+        <div class="access-list" id="access-container">${buildAccessHTML()}</div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-save" onclick="saveFiche()">Enregistrer les modifications</button>
+      </div>
+      <p id="msg" class="msg"></p>
+    `;
+
+    // Événements pour les selects "Autre"
+    document.getElementById('edit-origine')?.addEventListener('change', function() {
+      const autre = document.getElementById('edit-origine-autre');
+      if (this.value === 'Autre') {
+        autre.style.display = 'block';
+      } else {
+        autre.style.display = 'none';
+        autre.value = '';
+      }
+    });
+
+    document.getElementById('edit-typeSoins')?.addEventListener('change', function() {
+      const autre = document.getElementById('edit-typeSoins-autre');
+      if (this.value === 'Autre') {
+        autre.style.display = 'block';
+      } else {
+        autre.style.display = 'none';
+        autre.value = '';
+      }
+    });
+
+    document.getElementById('edit-evacuationType')?.addEventListener('change', function() {
+      const autre = document.getElementById('edit-evacuationAutre');
+      if (this.value === 'Autre') {
+        autre.style.display = 'block';
+      } else {
+        autre.style.display = 'none';
+        autre.value = '';
+      }
+    });
+  }
+
+  window.saveFiche = async function() {
+    const msgEl = document.getElementById('msg');
+    msgEl.textContent = '';
+    msgEl.className = 'msg';
+
+    let victimeNom = document.getElementById('edit-victimeNom').value.trim();
+    let victimeAge = document.getElementById('edit-victimeAge').value;
+    victimeAge = victimeAge ? parseInt(victimeAge) : null;
+
+    let origine = document.getElementById('edit-origine').value;
+    if (origine === 'Autre') {
+      origine = document.getElementById('edit-origine-autre').value.trim() || 'Autre';
+    }
+
+    let typeSoins = document.getElementById('edit-typeSoins').value;
+    if (typeSoins === 'Autre') {
+      typeSoins = document.getElementById('edit-typeSoins-autre').value.trim() || 'Autre';
+    }
+
+    let evacuationType = document.getElementById('edit-evacuationType').value;
+    if (evacuationType === 'Autre') {
+      evacuationType = document.getElementById('edit-evacuationAutre').value.trim() || 'Autre';
+    }
+
+    const decharge = document.getElementById('edit-decharge').value === 'true';
+    const dae = document.getElementById('edit-dae').value === 'true';
+    const heureDepart = document.getElementById('edit-heureDepart').value || null;
+
+    const data = {
+      victimeNom: victimeNom || null,
+      victimeAge: victimeAge,
+      origine: origine || null,
+      typeSoins: typeSoins || null,
+      decharge: decharge,
+      dae: dae,
+      evacuationType: evacuationType || null,
+      heureDepart: heureDepart,
+    };
+
+    // Seul le CDP peut modifier les accès
+    if (canEditAccess) {
+      data.access = selectedAccess;
+    }
+
+    try {
+      await setDoc(doc(db, 'I', ficheId), data, { merge: true });
+
+      // Mettre à jour l'entrée MC liée
+      if (ficheData.mcId) {
+        const mcUpdate = {
+          victime: victimeNom || null,
+          type: typeSoins || null,
+          origine: origine || null,
+          heureDepart: heureDepart,
+        };
+        await setDoc(doc(db, 'M', ficheData.mcId), mcUpdate, { merge: true });
+      }
+
+      msgEl.textContent = '✅ Modifications enregistrées.';
+      msgEl.className = 'msg success';
+
+      // Recharger les données
+      const snap = await getDoc(doc(db, 'I', ficheId));
+      if (snap.exists()) {
+        ficheData = { id: snap.id, ...snap.data() };
+        selectedAccess = ficheData.access && ficheData.access.length > 0 ? [...ficheData.access] : ['__TEAM__'];
+      }
+
+    } catch (e) {
+      console.error('Erreur sauvegarde:', e);
+      msgEl.textContent = 'Erreur: ' + e.message;
+      msgEl.className = 'msg error';
+    }
+  };
+</script>
+</body>
+</html>
