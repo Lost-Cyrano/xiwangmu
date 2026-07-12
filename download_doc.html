@@ -80,6 +80,53 @@
       return await response.arrayBuffer();
     }
 
+    // Calculer la taille de police optimale pour faire rentrer le texte dans la zone
+    function calculateOptimalFontSize(text, fieldWidth, fieldHeight, baseFontSize) {
+      if (!text || text.length === 0) return baseFontSize;
+      
+      // Estimation : un caractère fait environ 0.5 * fontSize de large en moyenne
+      // et la hauteur est d'environ 1.2 * fontSize
+      const maxWidth = fieldWidth - 2; // petite marge
+      const maxHeight = fieldHeight - 2;
+      
+      // Taille max basée sur la largeur
+      const sizeByWidth = (maxWidth / (text.length * 0.5));
+      // Taille max basée sur la hauteur
+      const sizeByHeight = maxHeight / 1.2;
+      
+      let optimalSize = Math.min(sizeByWidth, sizeByHeight, baseFontSize);
+      optimalSize = Math.max(optimalSize, 4); // pas plus petit que 4pt
+      optimalSize = Math.min(optimalSize, baseFontSize); // pas plus grand que la taille de base
+      
+      return Math.round(optimalSize);
+    }
+
+    // Remplir un champ texte avec taille de police optimale
+    function setTextFieldWithAutoSize(form, fieldName, text, baseFontSize, fieldWidth, fieldHeight) {
+      try {
+        const field = form.getTextField(fieldName);
+        field.setText(text || '');
+        
+        if (text && text.length > 0) {
+          const optimalSize = calculateOptimalFontSize(text, fieldWidth, fieldHeight, baseFontSize);
+          field.setFontSize(optimalSize);
+        }
+      } catch (e) {
+        console.warn(`Champ ${fieldName} non trouvé`);
+      }
+    }
+
+    // Dimensions approximatives des champs (largeur x hauteur en points)
+    const FIELD_DIMENSIONS = {
+      A: { w: 52, h: 18 },  // Heure d'arrivée
+      O: { w: 52, h: 18 },  // Origine
+      D: { w: 68, h: 18 },  // Destinataire
+      E: { w: 310, h: 18 }, // Description
+      T: { w: 26, h: 18 },  // Type
+      S: { w: 144, h: 18 }, // Suite
+      F: { w: 54, h: 18 }   // Fin
+    };
+
     window.generatePDF = async function() {
       const btn = document.getElementById('btn-generate');
       const progressEl = document.getElementById('progress');
@@ -108,9 +155,10 @@
 
         const LINES_PER_PAGE = 15;
         const totalMCPages = Math.max(1, Math.ceil(allEntries.length / LINES_PER_PAGE));
-        const totalPages = totalMCPages + 1;
+        // N2 = nombre de pages de type "page-3" uniquement (pas la page stats)
+        const N2_VALUE = totalMCPages;
 
-        progressEl.textContent = `${allEntries.length} entrées → ${totalPages} pages`;
+        progressEl.textContent = `${allEntries.length} entrées → ${totalMCPages} page(s) MC`;
 
         // Charger les templates
         progressEl.textContent = 'Chargement des templates...';
@@ -121,38 +169,62 @@
         const finalDoc = await PDFDocument.create();
 
         // === PAGES MAIN COURANTE ===
+        const BASE_FONT_SIZE = 8; // taille de base
+
         for (let p = 0; p < totalMCPages; p++) {
           progressEl.textContent = `Page MC ${p + 1}/${totalMCPages}...`;
           
-          // Charger un NOUVEAU document à partir du template pour chaque page
           const pageDoc = await PDFDocument.load(mcTemplateBytes);
           const form = pageDoc.getForm();
 
           const startIndex = p * LINES_PER_PAGE;
           const pageEntries = allEntries.slice(startIndex, startIndex + LINES_PER_PAGE);
 
-          // Remplir les champs de cette page
           for (let i = 0; i < LINES_PER_PAGE; i++) {
             const lineNum = i + 1;
             const entry = pageEntries[i] || null;
 
-            form.getTextField(`A${lineNum}`).setText(entry ? (entry.heureArrivee || '') : '');
-            form.getTextField(`O${lineNum}`).setText(entry ? (entry.origine || '') : '');
-            form.getTextField(`D${lineNum}`).setText(entry ? (entry.destinataire || '') : '');
-            form.getTextField(`E${lineNum}`).setText(entry ? (entry.description || '') : '');
-            form.getTextField(`T${lineNum}`).setText(entry ? (entry.type || '') : '');
-            form.getTextField(`S${lineNum}`).setText(entry ? (entry.suite || '') : '');
-            form.getTextField(`F${lineNum}`).setText(entry ? (entry.heureDepart || '') : '');
+            const aText = entry ? (entry.heureArrivee || '') : '';
+            const oText = entry ? (entry.origine || '') : '';
+            const dText = entry ? (entry.destinataire || '') : '';
+            const eText = entry ? (entry.description || '') : '';
+            const tText = entry ? (entry.type || '') : '';
+            const sText = entry ? (entry.suite || '') : '';
+            const fText = entry ? (entry.heureDepart || '') : '';
+
+            setTextFieldWithAutoSize(form, `A${lineNum}`, aText, BASE_FONT_SIZE, FIELD_DIMENSIONS.A.w, FIELD_DIMENSIONS.A.h);
+            setTextFieldWithAutoSize(form, `O${lineNum}`, oText, BASE_FONT_SIZE, FIELD_DIMENSIONS.O.w, FIELD_DIMENSIONS.O.h);
+            setTextFieldWithAutoSize(form, `D${lineNum}`, dText, BASE_FONT_SIZE, FIELD_DIMENSIONS.D.w, FIELD_DIMENSIONS.D.h);
+            setTextFieldWithAutoSize(form, `E${lineNum}`, eText, BASE_FONT_SIZE, FIELD_DIMENSIONS.E.w, FIELD_DIMENSIONS.E.h);
+            setTextFieldWithAutoSize(form, `T${lineNum}`, tText, BASE_FONT_SIZE, FIELD_DIMENSIONS.T.w, FIELD_DIMENSIONS.T.h);
+            setTextFieldWithAutoSize(form, `S${lineNum}`, sText, BASE_FONT_SIZE, FIELD_DIMENSIONS.S.w, FIELD_DIMENSIONS.S.h);
+            setTextFieldWithAutoSize(form, `F${lineNum}`, fText, BASE_FONT_SIZE, FIELD_DIMENSIONS.F.w, FIELD_DIMENSIONS.F.h);
           }
 
-          // Date, N1, N2
+          // Date du jour
           const today = new Date();
           const dateStr = today.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-          try { form.getTextField('Date').setText(dateStr); } catch (e) {}
-          try { form.getTextField('N1').setText(String(p + 1)); } catch (e) {}
-          try { form.getTextField('N2').setText(String(totalPages)); } catch (e) {}
+          try { 
+            const dateField = form.getTextField('Date');
+            dateField.setText(dateStr);
+            dateField.setFontSize(10);
+          } catch (e) {}
 
-          // Copier la page remplie dans le document final
+          // N1 = numéro de page actuelle
+          try { 
+            const n1Field = form.getTextField('N1');
+            n1Field.setText(String(p + 1));
+            n1Field.setFontSize(12);
+          } catch (e) {}
+
+          // N2 = nombre total de pages MC (sans la page stats)
+          try { 
+            const n2Field = form.getTextField('N2');
+            n2Field.setText(String(N2_VALUE));
+            n2Field.setFontSize(12);
+          } catch (e) {}
+
+          // Copier la page remplie
           const [filledPage] = await finalDoc.copyPages(pageDoc, [0]);
           finalDoc.addPage(filledPage);
         }
@@ -181,21 +253,53 @@
 
         const total = totalSoins + totalDecharge;
 
-        try { statsForm.getTextField('NombreDePage3').setText(String(totalPages)); } catch (e) {}
-        try { statsForm.getTextField('Total').setText(String(total)); } catch (e) {}
-        try { statsForm.getTextField('Soins').setText(String(totalSoins)); } catch (e) {}
-        try { statsForm.getTextField('Traumatismes').setText(String(ctTrauma)); } catch (e) {}
-        try { statsForm.getTextField('Petits_Soins').setText(String(ctPetitSoin)); } catch (e) {}
-        try { statsForm.getTextField('MalaisesEtMaladies').setText(String(ctMalaise)); } catch (e) {}
-        try { statsForm.getTextField('Inconscients').setText(String(ctInconscient)); } catch (e) {}
-        try { statsForm.getTextField('ACR').setText(String(ctACR)); } catch (e) {}
-        try { statsForm.getTextField('DAE').setText(String(totalDAE)); } catch (e) {}
-        try { statsForm.getTextField('Decharge').setText(String(totalDecharge)); } catch (e) {}
-        try { statsForm.getTextField('EvacuationCRF').setText(String(totalEvacCRF)); } catch (e) {}
-        try { statsForm.getTextField('EvacuationAutre').setText(String(totalEvacAutre)); } catch (e) {}
+        const statFields = [
+          'NombreDePage3', 'Total', 'Soins', 'Traumatismes', 'Petits_Soins',
+          'MalaisesEtMaladies', 'Inconscients', 'ACR', 'DAE', 'Decharge',
+          'EvacuationCRF', 'EvacuationAutre'
+        ];
+        const statValues = {
+          'NombreDePage3': String(N2_VALUE),
+          'Total': String(total),
+          'Soins': String(totalSoins),
+          'Traumatismes': String(ctTrauma),
+          'Petits_Soins': String(ctPetitSoin),
+          'MalaisesEtMaladies': String(ctMalaise),
+          'Inconscients': String(ctInconscient),
+          'ACR': String(ctACR),
+          'DAE': String(totalDAE),
+          'Decharge': String(totalDecharge),
+          'EvacuationCRF': String(totalEvacCRF),
+          'EvacuationAutre': String(totalEvacAutre)
+        };
+
+        statFields.forEach(fieldName => {
+          try {
+            const field = statsForm.getTextField(fieldName);
+            field.setText(statValues[fieldName] || '0');
+            field.setFontSize(11);
+          } catch (e) {
+            console.warn(`Champ stats ${fieldName} non trouvé`);
+          }
+        });
 
         const [statsPage] = await finalDoc.copyPages(statsDoc, [0]);
         finalDoc.addPage(statsPage);
+
+        // === VERROUILLER LE PDF (plus éditable) ===
+        progressEl.textContent = 'Verrouillage du document...';
+        
+        // 1. Aplatir les champs de formulaire
+        const form = finalDoc.getForm();
+        form.flatten();
+
+        // 2. Ajouter des restrictions de permissions (lecture seule, pas d'impression basse qualité)
+        finalDoc.setTitle('Main Courante - Xiwangmu CRF');
+        finalDoc.setAuthor('Xiwangmu CRF');
+        finalDoc.setSubject('Main Courante');
+        finalDoc.setKeywords(['main courante', 'CRF', 'xiwangmu']);
+        finalDoc.setProducer('Xiwangmu CRF');
+        finalDoc.setCreator('Xiwangmu CRF');
 
         // Télécharger
         progressEl.textContent = 'Finalisation...';
