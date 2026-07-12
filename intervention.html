@@ -6,44 +6,58 @@
   <title>Xiwangmu CRF – Intervention</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; min-height: 100vh; -webkit-tap-highlight-color: transparent; }
+    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; min-height: 100vh; -webkit-tap-highlight-color: transparent; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
 
-    header { background: white; border-bottom: 1px solid #e5e5e5; padding: 10px 16px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+    header { background: white; border-bottom: 1px solid #e5e5e5; padding: 10px 16px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; z-index: 100; }
     header .btn-back { width: 32px; height: 32px; border-radius: 50%; background: white; border: 1px solid #e0e0e0; color: #666; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: all 0.15s; line-height: 1; flex-shrink: 0; text-decoration: none; }
     header .btn-back:hover { background: #f5f5f5; border-color: #ccc; }
-    header .brand { display: flex; align-items: center; gap: 8px; }
+    header .brand { display: flex; align-items: center; gap: 8px; flex: 1; }
     header .brand img { height: 24px; }
     header .brand span { font-weight: 600; font-size: 0.95rem; }
-
-    .saved-indicator { font-size: 0.65rem; color: #0a0; opacity: 0; transition: opacity 0.3s; margin-left: auto; }
+    .saved-indicator { font-size: 0.65rem; color: #0a0; opacity: 0; transition: opacity 0.3s; white-space: nowrap; }
     .saved-indicator.visible { opacity: 1; }
     .saved-indicator.error { color: #c00; }
 
-    main { width: 100%; max-width: 100%; margin: 0 auto; padding: 12px; }
-    @media (min-width: 500px) { main { padding: 16px; } }
-    @media (min-width: 700px) { main { padding: 24px; } }
-    @media (min-width: 1000px) { main { max-width: 800px; padding: 32px 24px; } }
+    /* Navigation onglets */
+    nav.tabs { background: white; border-bottom: 1px solid #e5e5e5; display: flex; gap: 0; flex-shrink: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    nav.tabs::-webkit-scrollbar { display: none; }
+    nav.tabs button { padding: 10px 16px; border: none; background: none; cursor: pointer; font-size: 0.78rem; color: #888; white-space: nowrap; border-bottom: 2px solid transparent; transition: all 0.15s; flex-shrink: 0; }
+    nav.tabs button:hover { color: #444; }
+    nav.tabs button.active { color: #e60000; border-bottom-color: #e60000; font-weight: 500; }
+
+    /* Conteneur des onglets */
+    .tabs-container { flex: 1; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; display: flex; scroll-behavior: smooth; }
+    .tabs-container::-webkit-scrollbar { display: none; }
+
+    .tab-panel { scroll-snap-align: start; min-width: 100%; width: 100%; height: 100%; overflow-y: auto; padding: 12px; flex-shrink: 0; }
+    @media (min-width: 500px) { .tab-panel { padding: 16px; } }
+    @media (min-width: 700px) { .tab-panel { padding: 24px; } }
+
+    .tab-inner { max-width: 700px; margin: 0 auto; }
 
     .card { background: white; border-radius: 12px; border: 1px solid #e5e5e5; padding: 14px; margin-bottom: 14px; width: 100%; }
     @media (min-width: 500px) { .card { padding: 18px; } }
     @media (min-width: 700px) { .card { padding: 22px; } }
-    @media (min-width: 1000px) { .card { padding: 24px; } }
     .card h2 { font-size: 0.9rem; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
     @media (min-width: 500px) { .card h2 { font-size: 0.95rem; } }
 
-    .field { margin-bottom: 12px; }
-    .field label { font-size: 0.7rem; color: #888; display: block; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .field { margin-bottom: 10px; }
+    .field label { font-size: 0.7rem; color: #888; display: block; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px; }
     .field input, .field select, .field textarea { width: 100%; padding: 9px 12px; border: 1px solid #e5e5e5; border-radius: 8px; font-size: 0.85rem; font-family: inherit; background: #fafafa; transition: border 0.15s, background 0.15s; }
     .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: #e60000; background: white; box-shadow: 0 0 0 3px rgba(230,0,0,0.06); }
     .field textarea { resize: vertical; min-height: 60px; }
+    .field input:disabled { background: #f0f0f0; color: #999; cursor: not-allowed; }
 
     .row { display: flex; gap: 10px; flex-wrap: wrap; }
-    .row .field { flex: 1; min-width: 140px; }
+    .row .field { flex: 1; min-width: 130px; }
 
     .field-value { font-size: 0.85rem; color: #444; padding: 9px 0; }
     .field-value.empty { color: #ccc; font-style: italic; }
 
-    /* Accès */
+    .field-inline { display: flex; align-items: center; gap: 8px; }
+    .field-inline input[type="checkbox"] { width: auto; accent-color: #e60000; }
+    .field-inline label { margin-bottom: 0; text-transform: none; letter-spacing: 0; font-size: 0.8rem; cursor: pointer; }
+
     .access-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
     .access-chip { display: flex; align-items: center; gap: 4px; padding: 5px 8px; border-radius: 14px; border: 1px solid #e0e0e0; background: white; font-size: 0.7rem; cursor: pointer; transition: all 0.15s; }
     .access-chip.selected { background: #e60000; color: white; border-color: #e60000; }
@@ -52,15 +66,13 @@
     .access-chip.selected .chip-avatar { background: rgba(255,255,255,0.3); }
     .access-chip:not(.selected) .chip-avatar { background: #e60000; color: white; }
 
+    .empty-tab { text-align: center; padding: 40px 20px; color: #bbb; font-size: 0.85rem; }
+
     .loading { text-align: center; padding: 40px 20px; color: #bbb; font-size: 0.9rem; }
     .error-banner { background: #fff5f5; border: 1px solid #fcc; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; color: #c00; font-size: 0.8rem; }
 
-    @media (min-width: 500px) {
-      header .brand img { height: 26px; }
-    }
-    @media (min-width: 700px) {
-      header .brand img { height: 28px; }
-    }
+    @media (min-width: 500px) { header .brand img { height: 26px; } }
+    @media (min-width: 700px) { header .brand img { height: 28px; } }
   </style>
 </head>
 <body>
@@ -74,14 +86,22 @@
   <span class="saved-indicator" id="savedIndicator">Enregistré</span>
 </header>
 
-<main id="main-content">
-  <div class="loading">Chargement...</div>
-</main>
+<nav class="tabs" id="tabsNav">
+  <button class="active" data-tab="0">Général</button>
+  <button data-tab="1">Bilan</button>
+  <button data-tab="2">Soins</button>
+  <button data-tab="3">Évacuation</button>
+  <button data-tab="4">Accès</button>
+</nav>
+
+<div class="tabs-container" id="tabsContainer">
+  <!-- Les panneaux sont générés dynamiquement -->
+</div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAigiFFGONooT17W11gnABs1aHKN0O3N9s",
@@ -107,24 +127,19 @@
   let selectedAccess = [];
   let saveTimeout = null;
   let isSaving = false;
+  let currentTab = 0;
 
   const urlParams = new URLSearchParams(window.location.search);
   ficheId = urlParams.get('id');
 
   if (!ficheId) {
     onAuthStateChanged(auth, async (user) => {
-      if (user && user.displayName) {
-        window.location.href = user.photoURL === 'cdp' ? './ci.html' : './user.html';
-      } else {
-        window.location.href = './login.html';
-      }
+      if (user?.displayName) window.location.href = user.photoURL === 'cdp' ? './ci.html' : './user.html';
+      else window.location.href = './login.html';
     });
   } else {
     onAuthStateChanged(auth, async (user) => {
-      if (!user || !user.displayName) {
-        window.location.href = './login.html?redirect=' + encodeURIComponent(window.location.href);
-        return;
-      }
+      if (!user?.displayName) { window.location.href = './login.html?redirect=' + encodeURIComponent(window.location.href)); return; }
       CURRENT_NIVOL = user.displayName;
       USER_ROLE = user.photoURL;
       HOME_PAGE = USER_ROLE === 'cdp' ? './ci.html' : './user.html';
@@ -133,49 +148,45 @@
     });
   }
 
-  window.goBack = function() {
-    window.location.href = HOME_PAGE;
-  };
+  window.goBack = () => window.location.href = HOME_PAGE;
 
   async function init() {
-    const container = document.getElementById('main-content');
     try {
       const ficheSnap = await getDoc(doc(db, 'I', ficheId));
-      if (!ficheSnap.exists()) {
-        container.innerHTML = `<div class="error-banner">Fiche introuvable.</div><button class="btn-save" onclick="goBack()" style="margin-top:10px;background:#e60000;color:white;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;">Retour</button>`;
-        return;
-      }
+      if (!ficheSnap.exists()) { showError('Fiche introuvable.'); return; }
       ficheData = { id: ficheSnap.id, ...ficheSnap.data() };
 
       const userSnap = await getDoc(doc(db, 'U', CURRENT_NIVOL));
       if (!userSnap.exists()) { window.location.href = './login.html'; return; }
-      const userData = userSnap.data();
-      const userEquipeId = userData.E || null;
+      const userEquipeId = userSnap.data().E || null;
 
-      // CDP : accès à toutes les fiches de son équipe uniquement
-      // User : accès restreint par le champ access
-      if (ficheData.equipe !== userEquipeId) {
-        container.innerHTML = `<div class="error-banner">Cette fiche appartient à une autre équipe.</div><button class="btn-save" onclick="goBack()" style="margin-top:10px;background:#e60000;color:white;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;">Retour</button>`;
-        return;
-      }
-
-      // Pour les users simples, vérifier les accès
+      if (ficheData.equipe !== userEquipeId) { showError('Cette fiche appartient à une autre équipe.'); return; }
       if (USER_ROLE !== 'cdp') {
         const access = ficheData.access;
-        if (access && access.length > 0 && !access.includes('__TEAM__') && !access.includes(CURRENT_NIVOL)) {
-          container.innerHTML = `<div class="error-banner">Vous n'avez pas accès à cette fiche (accès restreint).</div><button class="btn-save" onclick="goBack()" style="margin-top:10px;background:#e60000;color:white;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;">Retour</button>`;
-          return;
+        if (access?.length > 0 && !access.includes('__TEAM__') && !access.includes(CURRENT_NIVOL)) {
+          showError('Vous n\'avez pas accès à cette fiche.'); return;
         }
       }
 
       await loadTeamMembers(ficheData.equipe);
-      selectedAccess = ficheData.access && ficheData.access.length > 0 ? [...ficheData.access] : ['__TEAM__'];
-      renderFiche();
+      selectedAccess = ficheData.access?.length > 0 ? [...ficheData.access] : ['__TEAM__'];
+      
+      // Ajuster les onglets visibles
+      updateTabsVisibility();
+      renderAllPanels();
+      setupTabNavigation();
+      setupScrollSync();
 
-    } catch (e) {
-      console.error('Erreur:', e);
-      container.innerHTML = `<div class="error-banner">Erreur: ${e.message}</div><button class="btn-save" onclick="goBack()" style="margin-top:10px;background:#e60000;color:white;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;">Retour</button>`;
-    }
+    } catch (e) { showError('Erreur: ' + e.message); }
+  }
+
+  function updateTabsVisibility() {
+    const tab4 = document.querySelector('nav.tabs button[data-tab="4"]');
+    if (tab4) tab4.style.display = canEditAccess ? '' : 'none';
+  }
+
+  function showError(msg) {
+    document.getElementById('tabsContainer').innerHTML = `<div class="tab-panel"><div class="tab-inner"><div class="error-banner">${msg}</div><button onclick="goBack()" style="background:#e60000;color:white;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;">Retour</button></div></div>`;
   }
 
   async function loadTeamMembers(equipeId) {
@@ -194,70 +205,75 @@
     return nom.substring(0, 2).toUpperCase();
   }
 
-  function buildAccessHTML() {
-    let html = `<div class="access-chip team-chip ${selectedAccess.includes('__TEAM__') ? 'selected' : ''}" data-nivol="__TEAM__" onclick="toggleAccess(this)">
-      <span class="chip-avatar">T</span> Toute l'équipe
-    </div>`;
-    teamMembers.forEach(m => {
-      const isSelected = selectedAccess.includes(m.nivol);
-      html += `<div class="access-chip ${isSelected ? 'selected' : ''}" data-nivol="${m.nivol}" onclick="toggleAccess(this)">
-        <span class="chip-avatar">${getInitials(m.nom)}</span> ${m.nom}
-      </div>`;
-    });
-    return html;
+  function calculateAge(birthDate) {
+    if (!birthDate) return null;
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    return age;
   }
 
-  window.toggleAccess = function(chip) {
-    if (!canEditAccess) return;
-    const nivol = chip.dataset.nivol;
-    if (nivol === '__TEAM__') {
-      if (selectedAccess.includes('__TEAM__')) { selectedAccess = []; }
-      else { selectedAccess = ['__TEAM__']; }
-    } else {
-      if (selectedAccess.includes(nivol)) { selectedAccess = selectedAccess.filter(n => n !== nivol); }
-      else { selectedAccess = selectedAccess.filter(n => n !== '__TEAM__'); selectedAccess.push(nivol); }
-      if (selectedAccess.length === teamMembers.length && teamMembers.length > 0) { selectedAccess = ['__TEAM__']; }
-      if (selectedAccess.length === 0) { selectedAccess = ['__TEAM__']; }
-    }
-    document.getElementById('access-container').innerHTML = buildAccessHTML();
-    autoSave({ access: selectedAccess });
-  };
+  function renderAllPanels() {
+    const container = document.getElementById('tabsContainer');
+    container.innerHTML = `
+      <div class="tab-panel" id="panel-0"><div class="tab-inner">${renderGeneralTab()}</div></div>
+      <div class="tab-panel" id="panel-1"><div class="tab-inner"><div class="card"><div class="empty-tab">Bilan — à venir</div></div></div></div>
+      <div class="tab-panel" id="panel-2"><div class="tab-inner"><div class="card"><div class="empty-tab">Soins — à venir</div></div></div></div>
+      <div class="tab-panel" id="panel-3"><div class="tab-inner"><div class="card"><div class="empty-tab">Évacuation — à venir</div></div></div></div>
+      ${canEditAccess ? `<div class="tab-panel" id="panel-4"><div class="tab-inner">${renderAccessTab()}</div></div>` : ''}
+    `;
+    bindAutoSave();
+  }
 
-  function renderFiche() {
-    const container = document.getElementById('main-content');
+  function renderGeneralTab() {
     const d = ficheData;
     const createdAt = d.createdAt?.toDate ? d.createdAt.toDate() : new Date(d.createdAt || Date.now());
+    const age = d.victimeAge || '';
+    const isMineur = age && parseInt(age) < 18;
 
-    let accessCardHTML = '';
-    if (canEditAccess) {
-      accessCardHTML = `
-        <div class="card">
-          <h2>Accès</h2>
-          <div class="access-list" id="access-container">${buildAccessHTML()}</div>
-        </div>`;
-    }
-
-    container.innerHTML = `
+    return `
       <div class="card">
-        <h2>Informations générales</h2>
+        <h2>Fiche ${ficheId}</h2>
+        <div class="field-value" style="font-size:0.75rem;color:#888;margin-bottom:12px;">
+          Créée le ${createdAt.toLocaleDateString('fr-FR', {day:'numeric',month:'long',year:'numeric'})} à ${createdAt.toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'})}
+        </div>
+        <div class="field">
+          <label>NOM Prénom</label>
+          <input type="text" id="edit-victimeNom" value="${d.victimeNom || ''}" placeholder="NOM Prénom">
+        </div>
         <div class="row">
           <div class="field">
-            <label>N° de fiche</label>
-            <div class="field-value">${ficheId}</div>
+            <label>N° Dossard</label>
+            <input type="number" id="edit-dossard" value="${d.dossard || ''}" placeholder="N°" min="0">
           </div>
           <div class="field">
-            <label>Date de création</label>
-            <div class="field-value">${createdAt.toLocaleDateString('fr-FR', {day:'numeric',month:'long',year:'numeric'})} à ${createdAt.toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'})}</div>
+            <label>Âge</label>
+            <input type="number" id="edit-victimeAge" value="${age}" placeholder="Âge" min="0" max="150">
           </div>
         </div>
         <div class="field">
-          <label>Victime</label>
-          <input type="text" id="edit-victimeNom" value="${d.victimeNom || ''}" placeholder="NOM Prénom" onchange="autoSaveField()">
+          <label>Date de naissance</label>
+          <input type="date" id="edit-dateNaissance" value="${d.dateNaissance || ''}" ${age ? 'disabled' : ''}>
+        </div>
+        <div class="field-inline" style="margin-bottom:10px;">
+          <input type="checkbox" id="edit-mineur" disabled ${isMineur ? 'checked' : ''}>
+          <label>Mineur</label>
         </div>
         <div class="row">
           <div class="field">
-            <label>Âge</label>
-            <input type="number" id="edit-victimeAge" value="${d.victimeAge || ''}" placeholder="Âge" min="0" max="150" onchange="autoSaveField()">
+            <label>Type de soins</label>
+            <select id="edit-typeSoins" onchange="handleTypeSoinsChange()">
+              <option value="">--</option>
+              <option value="Petit soin" ${d.typeSoins === 'Petit soin' ? 'selected' : ''}>Petit soin</option>
+              <option value="Traumatisme" ${d.typeSoins === 'Traumatisme' ? 'selected' : ''}>Traumatisme</option>
+              <option value="Malaise/maladie" ${d.typeSoins === 'Malaise/maladie' ? 'selected' : ''}>Malaise/maladie</option>
+              <option value="Inconscient" ${d.typeSoins === 'Inconscient' ? 'selected' : ''}>Inconscient</option>
+              <option value="Arrêt Cardiaque" ${d.typeSoins === 'Arrêt Cardiaque' ? 'selected' : ''}>Arrêt Cardiaque</option>
+              <option value="Autre" ${d.typeSoins && !['Petit soin','Traumatisme','Malaise/maladie','Inconscient','Arrêt Cardiaque'].includes(d.typeSoins) && d.typeSoins !== '' ? 'selected' : ''}>Autre</option>
+            </select>
+            <input type="text" id="edit-typeSoins-autre" value="${d.typeSoins && !['Petit soin','Traumatisme','Malaise/maladie','Inconscient','Arrêt Cardiaque',''].includes(d.typeSoins) ? d.typeSoins : ''}" placeholder="Précisez..." style="margin-top:4px;${d.typeSoins && !['Petit soin','Traumatisme','Malaise/maladie','Inconscient','Arrêt Cardiaque',''].includes(d.typeSoins) ? '' : 'display:none;'}">
           </div>
           <div class="field">
             <label>Origine</label>
@@ -267,162 +283,210 @@
               <option value="Public" ${d.origine === 'Public' ? 'selected' : ''}>Public</option>
               <option value="Autre" ${d.origine && d.origine !== 'Orga' && d.origine !== 'Public' ? 'selected' : ''}>Autre</option>
             </select>
-            <input type="text" id="edit-origine-autre" value="${d.origine && d.origine !== 'Orga' && d.origine !== 'Public' ? d.origine : ''}" placeholder="Précisez..." style="margin-top:4px;${d.origine && d.origine !== 'Orga' && d.origine !== 'Public' ? '' : 'display:none;'}" onchange="autoSaveField()">
+            <input type="text" id="edit-origine-autre" value="${d.origine && d.origine !== 'Orga' && d.origine !== 'Public' ? d.origine : ''}" placeholder="Précisez..." style="margin-top:4px;${d.origine && d.origine !== 'Orga' && d.origine !== 'Public' ? '' : 'display:none;'}">
           </div>
-        </div>
-        <div class="field">
-          <label>Type de soins</label>
-          <select id="edit-typeSoins" onchange="handleTypeSoinsChange()">
-            <option value="">--</option>
-            <option value="Petit soin" ${d.typeSoins === 'Petit soin' ? 'selected' : ''}>Petit soin</option>
-            <option value="Traumatisme" ${d.typeSoins === 'Traumatisme' ? 'selected' : ''}>Traumatisme</option>
-            <option value="Malaise/maladie" ${d.typeSoins === 'Malaise/maladie' ? 'selected' : ''}>Malaise/maladie</option>
-            <option value="Inconscient" ${d.typeSoins === 'Inconscient' ? 'selected' : ''}>Inconscient</option>
-            <option value="Arrêt Cardiaque" ${d.typeSoins === 'Arrêt Cardiaque' ? 'selected' : ''}>Arrêt Cardiaque</option>
-            <option value="Autre" ${d.typeSoins && !['Petit soin','Traumatisme','Malaise/maladie','Inconscient','Arrêt Cardiaque'].includes(d.typeSoins) && d.typeSoins !== '' ? 'selected' : ''}>Autre</option>
-          </select>
-          <input type="text" id="edit-typeSoins-autre" value="${d.typeSoins && !['Petit soin','Traumatisme','Malaise/maladie','Inconscient','Arrêt Cardiaque',''].includes(d.typeSoins) ? d.typeSoins : ''}" placeholder="Précisez..." style="margin-top:4px;${d.typeSoins && !['Petit soin','Traumatisme','Malaise/maladie','Inconscient','Arrêt Cardiaque',''].includes(d.typeSoins) ? '' : 'display:none;'}" onchange="autoSaveField()">
         </div>
       </div>
 
       <div class="card">
-        <h2>Suivi médical</h2>
-        <div class="row">
-          <div class="field">
-            <label>Décharge de responsabilité</label>
-            <select id="edit-decharge" onchange="autoSaveField()">
-              <option value="false" ${d.decharge !== true ? 'selected' : ''}>Non</option>
-              <option value="true" ${d.decharge === true ? 'selected' : ''}>Oui</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>DAE utilisé</label>
-            <select id="edit-dae" onchange="autoSaveField()">
-              <option value="false" ${d.dae !== true ? 'selected' : ''}>Non</option>
-              <option value="true" ${d.dae === true ? 'selected' : ''}>Oui</option>
-            </select>
-          </div>
+        <h2>Adresse</h2>
+        <div class="field">
+          <label>Adresse</label>
+          <input type="text" id="edit-adresse" value="${d.adresse || ''}" placeholder="Adresse">
         </div>
         <div class="field">
-          <label>Évacuation</label>
-          <select id="edit-evacuationType" onchange="handleEvacuationChange()">
-            <option value="">Aucune</option>
-            <option value="CRF" ${d.evacuationType === 'CRF' ? 'selected' : ''}>Croix-Rouge</option>
-            <option value="SAMU" ${d.evacuationType === 'SAMU' ? 'selected' : ''}>SAMU</option>
-            <option value="Pompiers" ${d.evacuationType === 'Pompiers' ? 'selected' : ''}>Pompiers</option>
-            <option value="Autre" ${d.evacuationType && !['CRF','SAMU','Pompiers'].includes(d.evacuationType) ? 'selected' : ''}>Autre</option>
-          </select>
-          <input type="text" id="edit-evacuationAutre" value="${d.evacuationType && !['CRF','SAMU','Pompiers',''].includes(d.evacuationType) ? d.evacuationType : ''}" placeholder="Précisez..." style="margin-top:4px;${d.evacuationType && !['CRF','SAMU','Pompiers',''].includes(d.evacuationType) ? '' : 'display:none;'}" onchange="autoSaveField()">
-        </div>
-        <div class="field">
-          <label>Heure de fin de prise en charge</label>
-          <input type="time" id="edit-heureDepart" value="${d.heureDepart || ''}" onchange="autoSaveField()">
+          <label>Code postal</label>
+          <input type="text" id="edit-codePostal" value="${d.codePostal || ''}" placeholder="Code postal" maxlength="10">
         </div>
       </div>
 
-      ${accessCardHTML}
+      <div class="card">
+        <h2>Contact</h2>
+        <div class="field">
+          <label>Personne à prévenir</label>
+          <input type="text" id="edit-contactNom" value="${d.contactNom || ''}" placeholder="NOM Prénom">
+        </div>
+        <div class="field">
+          <label>Numéro de téléphone</label>
+          <input type="tel" id="edit-contactTel" value="${d.contactTel || ''}" placeholder="06 12 34 56 78">
+        </div>
+      </div>
     `;
   }
 
-  // Handlers pour les selects "Autre"
+  function renderAccessTab() {
+    let html = `<div class="card"><h2>Accès</h2><div class="access-list" id="access-container">`;
+    html += `<div class="access-chip team-chip ${selectedAccess.includes('__TEAM__') ? 'selected' : ''}" data-nivol="__TEAM__" onclick="toggleAccess(this)"><span class="chip-avatar">T</span> Toute l'équipe</div>`;
+    teamMembers.forEach(m => {
+      html += `<div class="access-chip ${selectedAccess.includes(m.nivol) ? 'selected' : ''}" data-nivol="${m.nivol}" onclick="toggleAccess(this)"><span class="chip-avatar">${getInitials(m.nom)}</span> ${m.nom}</div>`;
+    });
+    html += `</div></div>`;
+    return html;
+  }
+
+  window.toggleAccess = function(chip) {
+    if (!canEditAccess) return;
+    const nivol = chip.dataset.nivol;
+    if (nivol === '__TEAM__') { selectedAccess = selectedAccess.includes('__TEAM__') ? [] : ['__TEAM__']; }
+    else {
+      if (selectedAccess.includes(nivol)) selectedAccess = selectedAccess.filter(n => n !== nivol);
+      else { selectedAccess = selectedAccess.filter(n => n !== '__TEAM__'); selectedAccess.push(nivol); }
+      if (selectedAccess.length === teamMembers.length && teamMembers.length > 0) selectedAccess = ['__TEAM__'];
+      if (selectedAccess.length === 0) selectedAccess = ['__TEAM__'];
+    }
+    document.getElementById('access-container').innerHTML = renderAccessTab().match(/<div class="access-list" id="access-container">([\s\S]*?)<\/div>/)[1];
+    autoSave({ access: selectedAccess });
+  };
+
+  // Navigation
+  function setupTabNavigation() {
+    const buttons = document.querySelectorAll('nav.tabs button');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const index = parseInt(btn.dataset.tab);
+        goToTab(index);
+      });
+    });
+  }
+
+  function setupScrollSync() {
+    const container = document.getElementById('tabsContainer');
+    container.addEventListener('scroll', () => {
+      const scrollLeft = container.scrollLeft;
+      const panelWidth = container.clientWidth;
+      const newTab = Math.round(scrollLeft / panelWidth);
+      if (newTab !== currentTab && newTab >= 0 && newTab < document.querySelectorAll('.tab-panel').length) {
+        currentTab = newTab;
+        updateActiveTabButton();
+      }
+    });
+  }
+
+  function goToTab(index) {
+    const container = document.getElementById('tabsContainer');
+    const panelWidth = container.clientWidth;
+    container.scrollTo({ left: index * panelWidth, behavior: 'smooth' });
+    currentTab = index;
+    updateActiveTabButton();
+  }
+
+  function updateActiveTabButton() {
+    document.querySelectorAll('nav.tabs button').forEach((btn, i) => {
+      btn.classList.toggle('active', i === currentTab);
+    });
+    // Scroll the tab into view if needed
+    const activeBtn = document.querySelector(`nav.tabs button[data-tab="${currentTab}"]`);
+    if (activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+
   window.handleOrigineChange = function() {
     const sel = document.getElementById('edit-origine');
     const autre = document.getElementById('edit-origine-autre');
-    if (sel.value === 'Autre') { autre.style.display = 'block'; }
-    else { autre.style.display = 'none'; autre.value = ''; }
+    if (sel.value === 'Autre') { autre.style.display = 'block'; } else { autre.style.display = 'none'; autre.value = ''; }
     autoSaveField();
   };
 
   window.handleTypeSoinsChange = function() {
     const sel = document.getElementById('edit-typeSoins');
     const autre = document.getElementById('edit-typeSoins-autre');
-    if (sel.value === 'Autre') { autre.style.display = 'block'; }
-    else { autre.style.display = 'none'; autre.value = ''; }
+    if (sel.value === 'Autre') { autre.style.display = 'block'; } else { autre.style.display = 'none'; autre.value = ''; }
     autoSaveField();
   };
 
-  window.handleEvacuationChange = function() {
-    const sel = document.getElementById('edit-evacuationType');
-    const autre = document.getElementById('edit-evacuationAutre');
-    if (sel.value === 'Autre') { autre.style.display = 'block'; }
-    else { autre.style.display = 'none'; autre.value = ''; }
-    autoSaveField();
-  };
+  function bindAutoSave() {
+    const ageInput = document.getElementById('edit-victimeAge');
+    const dateInput = document.getElementById('edit-dateNaissance');
+    const mineurCheck = document.getElementById('edit-mineur');
 
-  // Auto-sauvegarde avec debounce
+    if (ageInput) {
+      ageInput.addEventListener('input', () => {
+        const age = parseInt(ageInput.value);
+        if (ageInput.value) {
+          if (dateInput) dateInput.disabled = true;
+          if (mineurCheck) mineurCheck.checked = !isNaN(age) && age < 18;
+        } else {
+          if (dateInput) dateInput.disabled = false;
+          if (mineurCheck) mineurCheck.checked = false;
+        }
+        autoSaveField();
+      });
+    }
+
+    if (dateInput) {
+      dateInput.addEventListener('change', () => {
+        if (dateInput.value) {
+          const age = calculateAge(dateInput.value);
+          if (ageInput) { ageInput.value = age; ageInput.disabled = true; }
+          if (mineurCheck) mineurCheck.checked = age !== null && age < 18;
+        } else {
+          if (ageInput) ageInput.disabled = false;
+          if (mineurCheck) mineurCheck.checked = false;
+        }
+        autoSaveField();
+      });
+    }
+
+    // Tous les autres champs
+    document.querySelectorAll('input:not([type="checkbox"]):not(#edit-victimeAge):not(#edit-dateNaissance), select, textarea').forEach(el => {
+      el.addEventListener('change', autoSaveField);
+      el.addEventListener('input', autoSaveField);
+    });
+  }
+
   window.autoSaveField = function() {
     if (saveTimeout) clearTimeout(saveTimeout);
-    saveTimeout = setTimeout(() => autoSave(), 600);
+    saveTimeout = setTimeout(() => autoSave(), 500);
   };
 
   async function autoSave(extraData = {}) {
     if (isSaving) return;
     isSaving = true;
-
     const indicator = document.getElementById('savedIndicator');
-    indicator.textContent = 'Enregistrement...';
+    indicator.textContent = '...';
     indicator.className = 'saved-indicator visible';
 
     try {
-      let victimeNom = document.getElementById('edit-victimeNom')?.value?.trim() || null;
-      let victimeAge = document.getElementById('edit-victimeAge')?.value;
+      const getVal = (id) => document.getElementById(id)?.value?.trim() || null;
+      
+      let victimeNom = getVal('edit-victimeNom');
+      let dossard = getVal('edit-dossard');
+      let victimeAge = getVal('edit-victimeAge');
       victimeAge = victimeAge ? parseInt(victimeAge) : null;
+      let dateNaissance = getVal('edit-dateNaissance');
+      let adresse = getVal('edit-adresse');
+      let codePostal = getVal('edit-codePostal');
+      let contactNom = getVal('edit-contactNom');
+      let contactTel = getVal('edit-contactTel');
 
       let origine = document.getElementById('edit-origine')?.value || '';
-      if (origine === 'Autre') {
-        origine = document.getElementById('edit-origine-autre')?.value?.trim() || 'Autre';
-      }
+      if (origine === 'Autre') origine = getVal('edit-origine-autre') || 'Autre';
 
       let typeSoins = document.getElementById('edit-typeSoins')?.value || '';
-      if (typeSoins === 'Autre') {
-        typeSoins = document.getElementById('edit-typeSoins-autre')?.value?.trim() || 'Autre';
-      }
-
-      let evacuationType = document.getElementById('edit-evacuationType')?.value || '';
-      if (evacuationType === 'Autre') {
-        evacuationType = document.getElementById('edit-evacuationAutre')?.value?.trim() || 'Autre';
-      }
-
-      const decharge = document.getElementById('edit-decharge')?.value === 'true';
-      const dae = document.getElementById('edit-dae')?.value === 'true';
-      const heureDepart = document.getElementById('edit-heureDepart')?.value || null;
+      if (typeSoins === 'Autre') typeSoins = getVal('edit-typeSoins-autre') || 'Autre';
 
       const data = {
-        victimeNom: victimeNom,
-        victimeAge: victimeAge,
-        origine: origine || null,
-        typeSoins: typeSoins || null,
-        decharge: decharge,
-        dae: dae,
-        evacuationType: evacuationType || null,
-        heureDepart: heureDepart,
+        victimeNom, dossard, victimeAge, dateNaissance, adresse, codePostal, contactNom, contactTel,
+        origine: origine || null, typeSoins: typeSoins || null,
         ...extraData
       };
 
       await setDoc(doc(db, 'I', ficheId), data, { merge: true });
 
-      // Mettre à jour l'entrée MC liée
       if (ficheData.mcId) {
-        const mcUpdate = {
-          victime: victimeNom,
-          type: typeSoins || null,
-          origine: origine || null,
-          heureDepart: heureDepart,
-        };
-        await setDoc(doc(db, 'M', ficheData.mcId), mcUpdate, { merge: true });
+        await setDoc(doc(db, 'M', ficheData.mcId), {
+          victime: victimeNom, type: typeSoins || null, origine: origine || null
+        }, { merge: true });
       }
 
       indicator.textContent = 'Enregistré';
       indicator.className = 'saved-indicator visible';
-      setTimeout(() => { indicator.className = 'saved-indicator'; }, 2000);
-
+      setTimeout(() => { indicator.className = 'saved-indicator'; }, 1500);
     } catch (e) {
-      console.error('Erreur sauvegarde:', e);
+      console.error(e);
       indicator.textContent = 'Erreur';
       indicator.className = 'saved-indicator visible error';
-      setTimeout(() => { indicator.className = 'saved-indicator'; }, 3000);
+      setTimeout(() => { indicator.className = 'saved-indicator'; }, 2500);
     }
-
     isSaving = false;
   }
 </script>
